@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   ChevronDown,
+  Pause,
   Play,
   RefreshCw,
 } from "lucide-react";
@@ -348,6 +349,160 @@ function SectionHeading({
   );
 }
 
+function formatVideoTime(seconds: number) {
+  if (!Number.isFinite(seconds)) {
+    return "0:00";
+  }
+
+  const wholeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(wholeSeconds / 60);
+  const remainder = String(wholeSeconds % 60).padStart(2, "0");
+  return `${minutes}:${remainder}`;
+}
+
+function RecapVideo() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    setPlaybackError(null);
+
+    if (video.paused || video.ended) {
+      if (video.ended || hasEnded) {
+        video.currentTime = 0;
+        setCurrentTime(0);
+        setHasEnded(false);
+      }
+
+      void video.play().catch(() => {
+        setIsPlaying(false);
+        setPlaybackError(
+          "Playback was blocked by the browser. Use Download MP4 below.",
+        );
+      });
+      return;
+    }
+
+    video.pause();
+  };
+
+  const primaryLabel = hasEnded
+    ? "Replay recap"
+    : isPlaying
+      ? "Pause recap"
+      : "Play recap";
+
+  return (
+    <figure className="video-figure">
+      <div className="video-player" data-ended={hasEnded}>
+        <video
+          onDurationChange={(event) => setDuration(event.currentTarget.duration)}
+          onEnded={() => {
+            setHasEnded(true);
+            setIsPlaying(false);
+          }}
+          onPause={() => setIsPlaying(false)}
+          onPlay={() => {
+            setHasEnded(false);
+            setIsPlaying(true);
+          }}
+          onTimeUpdate={(event) =>
+            setCurrentTime(event.currentTarget.currentTime)
+          }
+          playsInline
+          poster="/duplicate-payment-explainer.png"
+          preload="metadata"
+          ref={videoRef}
+        >
+          <source src="/duplicate-payment-explainer.mp4" type="video/mp4" />
+          Your browser does not support MP4 video.
+        </video>
+
+        {!isPlaying ? (
+          <button
+            aria-label={primaryLabel}
+            className="video-stage-button"
+            onClick={togglePlayback}
+            type="button"
+          >
+            {hasEnded ? (
+              <RefreshCw aria-hidden="true" size={20} />
+            ) : (
+              <Play aria-hidden="true" fill="currentColor" size={19} />
+            )}
+            <span>{primaryLabel}</span>
+          </button>
+        ) : null}
+
+        <div className="video-controls">
+          <button
+            aria-label={primaryLabel}
+            onClick={togglePlayback}
+            type="button"
+          >
+            {hasEnded ? (
+              <RefreshCw aria-hidden="true" size={15} />
+            ) : isPlaying ? (
+              <Pause aria-hidden="true" fill="currentColor" size={15} />
+            ) : (
+              <Play aria-hidden="true" fill="currentColor" size={15} />
+            )}
+            <span>{primaryLabel}</span>
+          </button>
+          <input
+            aria-label="Video position"
+            max={duration || 0}
+            min="0"
+            onChange={(event) => {
+              const video = videoRef.current;
+              if (!video) {
+                return;
+              }
+
+              const nextTime = Number(event.currentTarget.value);
+              video.currentTime = nextTime;
+              setCurrentTime(nextTime);
+              setHasEnded(duration > 0 && nextTime >= duration);
+            }}
+            step="0.01"
+            type="range"
+            value={Math.min(currentTime, duration || 0)}
+          />
+          <output aria-label="Video time">
+            {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+          </output>
+        </div>
+      </div>
+
+      {playbackError ? (
+        <p className="video-error" role="alert">
+          {playbackError}
+        </p>
+      ) : null}
+
+      <figcaption>
+        <p>
+          Watch the unique insert select one owner, then the stored response
+          return to request B.
+        </p>
+        <a href="/duplicate-payment-explainer.mp4" download>
+          Download MP4
+          <ArrowRight aria-hidden="true" size={15} />
+        </a>
+      </figcaption>
+    </figure>
+  );
+}
+
 export function App() {
   const [mode, setMode] = useState<PaymentMode>("unprotected");
   const [result, setResult] = useState<LabRunResult | null>(null);
@@ -613,27 +768,7 @@ export function App() {
                 <ChevronDown aria-hidden="true" size={15} />
               </span>
             </summary>
-            <figure className="video-figure">
-              <video
-                controls
-                playsInline
-                poster="/duplicate-payment-explainer.png"
-                preload="metadata"
-              >
-                <source src="/duplicate-payment-explainer.mp4" type="video/mp4" />
-                Your browser does not support MP4 video.
-              </video>
-              <figcaption>
-                <p>
-                  Watch the unique insert select one owner, then the stored
-                  response return to request B.
-                </p>
-                <a href="/duplicate-payment-explainer.mp4" download>
-                  Download MP4
-                  <ArrowRight aria-hidden="true" size={15} />
-                </a>
-              </figcaption>
-            </figure>
+            <RecapVideo />
           </details>
         </section>
 

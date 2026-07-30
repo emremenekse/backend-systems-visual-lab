@@ -52,7 +52,7 @@ a {
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible,
-video:focus-visible {
+input:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 3px;
 }
@@ -859,12 +859,100 @@ video:focus-visible {
   margin: 0 0 1.5rem;
 }
 
-.video-figure video {
-  display: block;
-  width: 100%;
+.video-player {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--ink);
   background: #0a0a0a;
   aspect-ratio: 16 / 9;
+}
+
+.video-figure video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  object-fit: contain;
+}
+
+.video-stage-button {
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border: 0;
+  background: rgb(10 10 10 / 0.32);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.video-stage-button:hover {
+  background: rgb(10 10 10 / 0.45);
+}
+
+.video-stage-button svg {
+  box-sizing: content-box;
+  border: 1px solid rgb(255 255 255 / 0.72);
+  border-radius: 50%;
+  padding: 0.8rem;
+}
+
+.video-controls {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  min-height: 3.25rem;
+  grid-template-columns: auto minmax(5rem, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  background: rgb(10 10 10 / 0.9);
+  color: #fff;
+  padding: 0.65rem 0.8rem;
+}
+
+.video-controls button {
+  display: inline-flex;
+  min-width: 7.8rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.video-controls input {
+  width: 100%;
+  accent-color: #8fb4ff;
+  cursor: pointer;
+}
+
+.video-controls output {
+  min-width: 4.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  text-align: right;
+}
+
+.video-error {
+  margin: 0;
+  border: 1px solid var(--red);
+  border-top: 0;
+  background: var(--red-soft);
+  color: var(--red);
+  padding: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .video-figure figcaption {
@@ -1159,6 +1247,22 @@ video:focus-visible {
   .video-figure figcaption {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .video-controls {
+    grid-template-columns: auto 1fr;
+  }
+
+  .video-controls button {
+    min-width: auto;
+  }
+
+  .video-controls button span {
+    display: none;
+  }
+
+  .video-controls output {
+    display: none;
   }
 
   .desktop-timeline {
