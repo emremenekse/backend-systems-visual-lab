@@ -1,12 +1,5 @@
 # Contributing
 
-A lab proposal must include:
+Each lab must be self-contained and runnable from its own folder.
 
-- the invariant being protected;
-- a plausible naive implementation;
-- a deterministic failure reproduction;
-- at least one credible solution and its cost;
-- the runtime events required for visualization;
-- the evidence that would invalidate the proposed conclusion.
-
-Do not add a pattern-only example. If the failure cannot be reproduced, it is documentation rather than a lab.
+It needs a clear failure case, at least one fix, tests, and a visual generated from real runtime events.
