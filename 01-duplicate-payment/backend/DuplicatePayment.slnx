@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DuplicatePayment.Api/DuplicatePayment.Api.csproj" />
+  <Project Path="DuplicatePayment.Provider/DuplicatePayment.Provider.csproj" />
+  <Project Path="DuplicatePayment.Api.Tests/DuplicatePayment.Api.Tests.csproj" />
+</Solution>

@@ -1,0 +1,4 @@
+name: duplicate-payment-lab
+
+include:
+  - path: ./01-duplicate-payment/infra/compose.yaml

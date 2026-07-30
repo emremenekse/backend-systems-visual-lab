@@ -1,49 +1,53 @@
 # Backend Systems Visual Lab
 
-A working lab for learning senior backend concepts with real code and simple visuals.
+Runnable backend failure scenarios explained with real code and browser visuals.
 
-For every topic we will:
+## Run the first lab
 
-1. build the naive version;
-2. reproduce the failure;
-3. visualize what happened;
-4. implement and compare the fixes.
+You only need Docker Compose 2.20 or newer:
 
-## First lab
-
-### What happens when “Pay” is clicked twice?
-
-We will compare:
-
-- no protection;
-- a database unique constraint;
-- an idempotency key with response replay.
-
-The backend will produce the real event trace. The web app and Remotion video will visualize the same trace.
-
-[Open the first lab](labs/01-duplicate-payment/README.md)
-
-## Structure
-
-```text
-apps/api       runnable backend
-apps/web       interactive visual
-apps/video     Remotion video
-labs           one folder per topic
-packages       shared contracts
-infra          local dependencies
+```bash
+docker compose up -d --build
 ```
 
-This stays as one repository while the labs share the same tools and visual system.
+Open [http://localhost:4173](http://localhost:4173).
 
-## Next topics
+Stop everything with:
 
-- Race conditions and overselling
-- Transactional outbox
-- Retry storms and backpressure
-- Cache stampede
-- Zero-downtime migrations
-- Service boundaries
-- SLO, capacity, and cost
+```bash
+docker compose down
+```
 
-[See the roadmap](ROADMAP.md)
+## What you will examine
+
+The first lab sends the same payment twice and compares three outcomes:
+
+| Mode | Result |
+| --- | --- |
+| No protection | Two requests can create two charges |
+| Unique constraint only | One charge; the duplicate request fails |
+| Full idempotency workflow | One charge; both requests receive the same response |
+
+Run each mode, follow the execution diagram, then open the raw runtime trace if
+you want the implementation detail.
+
+## Repository shape
+
+Each numbered folder is an independent project. Its language and stack may
+change without affecting the other labs.
+
+```text
+01-duplicate-payment/
+  backend/   .NET API, provider, and tests
+  visual/    React experiment and browser animation
+  video/     optional Remotion export
+  infra/     Docker Compose
+```
+
+## Labs
+
+| Lab | Topic | Status |
+| --- | --- | --- |
+| [01](01-duplicate-payment/README.md) | Duplicate payment and idempotency · .NET | Runnable |
+
+[Roadmap](ROADMAP.md)

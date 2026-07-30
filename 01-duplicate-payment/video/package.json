@@ -1,0 +1,27 @@
+{
+  "name": "duplicate-payment-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "capture": "node scripts/capture-trace.mjs",
+    "render": "remotion render src/index.ts DuplicatePayment out/duplicate-payment.mp4 --props=run.json --image-format=png --pixel-format=yuv420p --color-space=bt709",
+    "render:sample": "remotion render src/index.ts DuplicatePayment out/duplicate-payment-sample.mp4 --props=src/sample-run.json --image-format=png --pixel-format=yuv420p --color-space=bt709",
+    "render:visual": "remotion render src/index.ts DuplicatePayment ../visual/public/duplicate-payment-explainer.mp4 --props=src/sample-run.json --image-format=png --pixel-format=yuv420p --color-space=bt709",
+    "poster:visual": "remotion still src/index.ts DuplicatePayment ../visual/public/duplicate-payment-explainer.png --frame=390 --props=src/sample-run.json",
+    "publish:visual": "npm run render:visual && npm run poster:visual",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.502",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.502"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}

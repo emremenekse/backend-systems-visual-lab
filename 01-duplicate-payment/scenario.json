@@ -1,0 +1,9 @@
+{
+  "id": "duplicate-payment",
+  "invariant": "One payment intent creates at most one charge.",
+  "modes": [
+    "unprotected",
+    "database-constraint",
+    "idempotent-api"
+  ]
+}
