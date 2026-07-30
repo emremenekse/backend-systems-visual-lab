@@ -16,8 +16,9 @@ npm run render
 
 Set `MODE=unprotected` or `MODE=database-constraint` when capturing another mode.
 
-Publish the English 15-second execution model and poster directly into the
-visual lesson:
+Publish the English 15-second execution animation and poster directly into the
+visual lesson. Request tokens move through the API, ownership record, provider,
+ledger, and replay path:
 
 ```bash
 npm run publish:visual

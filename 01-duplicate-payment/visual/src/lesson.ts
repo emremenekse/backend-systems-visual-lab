@@ -1,4 +1,4 @@
-import type { LabRunResult, PaymentMode } from "./types";
+import type { PaymentMode } from "./types";
 
 export interface LessonMode {
   title: string;
@@ -9,14 +9,6 @@ export interface LessonMode {
   interviewLine: string;
   codeLanguage: string;
   code: string;
-}
-
-export interface StoryStep {
-  label: string;
-  title: string;
-  explanation: string;
-  focus: "customer" | "api" | "database" | "provider" | "result";
-  tone: "neutral" | "danger" | "success";
 }
 
 export const lessonModes: Record<PaymentMode, LessonMode> = {
@@ -80,83 +72,3 @@ return charge;`,
 
 export const sixtySecondAnswer =
   "A duplicate payment is one business operation executing more than once. I identify that operation with a payment intent and idempotency key, then atomically select one owner in durable storage. Only the owner calls the provider; duplicates receive the stored response. I propagate the same key downstream and use processing states plus reconciliation for crashes and ambiguous timeouts. That gives an effectively-once side effect under at-least-once delivery—not a blanket exactly-once guarantee.";
-
-export function createStorySteps(result: LabRunResult): StoryStep[] {
-  const charges = result.summary.providerCharges;
-  const failed = charges > 1;
-
-  const guardStep: StoryStep =
-    result.mode === "unprotected"
-      ? {
-          label: "02 / Decision",
-          title: "Both requests are accepted",
-          explanation:
-            "The API has no key or database rule that identifies them as the same payment operation.",
-          focus: "api",
-          tone: "danger",
-        }
-      : result.mode === "database-constraint"
-        ? {
-            label: "02 / Decision",
-            title: "The unique index selects one owner",
-            explanation:
-              "The first insert wins. The second conflicts on the payment intent.",
-            focus: "database",
-            tone: "success",
-          }
-        : {
-            label: "02 / Decision",
-            title: "Idempotency key selects one owner",
-            explanation:
-              "The owner executes. The duplicate waits for the response that will be stored against the same key.",
-            focus: "database",
-            tone: "success",
-          };
-
-  const providerStep: StoryStep =
-    charges > 1
-      ? {
-          label: "03 / Side effect",
-          title: "The provider creates two charges",
-          explanation:
-            "Two outbound calls become two separate financial effects on the customer's account.",
-          focus: "provider",
-          tone: "danger",
-        }
-      : {
-          label: "03 / Side effect",
-          title: "The provider is called once",
-            explanation:
-            result.mode === "idempotent-api"
-              ? "The duplicate never reaches the provider; it receives a replay of the stored response."
-              : "The unique constraint stops the duplicate before a second provider call.",
-          focus: "provider",
-          tone: "success",
-        };
-
-  return [
-    {
-      label: "01 / Race",
-      title: "One order produces two concurrent requests",
-      explanation:
-        "Request A and Request B reach the API with the same payment intent and amount.",
-      focus: "customer",
-      tone: "neutral",
-    },
-    guardStep,
-    providerStep,
-    {
-      label: "04 / Result",
-      title: failed
-        ? "Invariant broken: one intent, two charges"
-        : "Invariant preserved: one intent, one charge",
-      explanation: failed
-        ? "Both HTTP requests succeeded, but the business operation executed twice. This is a data and money error."
-        : result.mode === "idempotent-api"
-          ? "Both callers see the same payment and charge IDs. The second response is a replay."
-          : "The duplicate is rejected before it can create another financial side effect.",
-      focus: "result",
-      tone: failed ? "danger" : "success",
-    },
-  ];
-}

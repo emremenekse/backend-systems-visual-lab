@@ -10,9 +10,10 @@ docker compose -f infra/compose.yaml up --build
 ```
 
 Open [http://localhost:4173](http://localhost:4173). The lesson asks for a
-prediction, runs two real concurrent requests, explains the result in four
-steps, and reduces the design to its invariant, execution owner, response
-replay, and recovery boundary. The Remotion recap and raw trace are optional.
+prediction, runs two real concurrent requests, and plots both requests on one
+execution timeline. The diagram shows the owner claim, provider call, ledger
+effect, and response replay without a numbered walkthrough. The Remotion recap
+and raw trace are optional.
 
 Stop the lab with:
 

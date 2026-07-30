@@ -13,6 +13,7 @@ const paper = "#f3f1eb";
 const muted = "#73716b";
 const rule = "#b8b5ad";
 const blue = "#1849a9";
+const cyan = "#0e7490";
 const red = "#a32921";
 const green = "#176b46";
 
@@ -20,11 +21,16 @@ const mono: CSSProperties = {
   fontFamily: "SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 };
 
-const modeLabels: Record<LabRunResult["mode"], string> = {
-  unprotected: "NO PROTECTION",
-  "database-constraint": "UNIQUE CONSTRAINT",
-  "idempotent-api": "IDEMPOTENCY KEY",
-};
+function clamp(
+  frame: number,
+  input: number[],
+  output: number[],
+) {
+  return interpolate(frame, input, output, {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+}
 
 function sceneOpacity(
   frame: number,
@@ -32,15 +38,9 @@ function sceneOpacity(
   end: number,
   keepVisible = false,
 ) {
-  const input = keepVisible
-    ? [start, start + 12, end]
-    : [start, start + 12, end - 12, end];
-  const output = keepVisible ? [0, 1, 1] : [0, 1, 1, 0];
-
-  return interpolate(frame, input, output, {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  return keepVisible
+    ? clamp(frame, [start, start + 12, end], [0, 1, 1])
+    : clamp(frame, [start, start + 12, end - 12, end], [0, 1, 1, 0]);
 }
 
 function Scene({
@@ -56,16 +56,12 @@ function Scene({
   keepVisible?: boolean;
   start: number;
 }) {
-  const opacity = sceneOpacity(frame, start, end, keepVisible);
-  const translateY = interpolate(opacity, [0, 1], [20, 0]);
-
   return (
     <div
       style={{
         position: "absolute",
-        inset: "180px 100px 90px",
-        opacity,
-        transform: `translateY(${translateY}px)`,
+        inset: "165px 100px 90px",
+        opacity: sceneOpacity(frame, start, end, keepVisible),
       }}
     >
       {children}
@@ -73,67 +69,78 @@ function Scene({
   );
 }
 
-function Label({ children, color = blue }: { children: ReactNode; color?: string }) {
-  return (
-    <div
-      style={{
-        ...mono,
-        color,
-        fontSize: 17,
-        fontWeight: 700,
-        letterSpacing: 2.4,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function RequestLine({
+function Token({
+  color,
   label,
-  target,
-  tone = blue,
+  opacity = 1,
+  x,
+  y,
 }: {
+  color: string;
   label: string;
-  target: string;
-  tone?: string;
+  opacity?: number;
+  x: number;
+  y: number;
 }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "230px 1fr 330px",
-        alignItems: "center",
-        gap: 26,
-        borderTop: `1px solid ${rule}`,
-        padding: "28px 0",
-      }}
-    >
-      <span
-        style={{
-          ...mono,
-          color: tone,
-          fontSize: 18,
-          fontWeight: 700,
-        }}
+    <g opacity={opacity} transform={`translate(${x} ${y})`}>
+      <circle fill={color} r="22" />
+      <text
+        dominantBaseline="middle"
+        fill={paper}
+        fontFamily={mono.fontFamily}
+        fontSize="15"
+        fontWeight="800"
+        textAnchor="middle"
+        y="1"
       >
         {label}
-      </span>
-      <div style={{ height: 2, background: tone }} />
-      <strong style={{ color: tone, fontSize: 26 }}>{target}</strong>
-    </div>
+      </text>
+    </g>
+  );
+}
+
+function PhaseLabel({ children, x }: { children: ReactNode; x: number }) {
+  return (
+    <text
+      fill={muted}
+      fontFamily={mono.fontFamily}
+      fontSize="13"
+      fontWeight="700"
+      letterSpacing="2"
+      x={x}
+      y="105"
+    >
+      {children}
+    </text>
   );
 }
 
 export function DuplicatePaymentVideo(props: LabRunResult) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const intro = spring({
+  const headerIn = spring({
     frame,
     fps,
     config: { damping: 20, stiffness: 115 },
   });
-  const failed = props.summary.providerCharges > 1;
+
+  const failureA = clamp(frame, [18, 72, 118, 155], [130, 520, 1030, 1510]);
+  const failureB = clamp(frame, [30, 84, 130, 167], [130, 520, 1030, 1510]);
+  const firstChargeOpacity = clamp(frame, [105, 116], [0, 1]);
+  const secondChargeOpacity = clamp(frame, [118, 132], [0, 1]);
+  const failureVerdictOpacity = clamp(frame, [146, 160], [0, 1]);
+
+  const claimA = clamp(frame, [205, 250], [130, 650]);
+  const claimB = clamp(frame, [218, 262], [130, 650]);
+  const ownerA = clamp(frame, [263, 320, 355], [650, 1110, 1510]);
+  const ownerB = 650;
+  const ownerLabelOpacity = clamp(frame, [258, 270], [0, 1]);
+  const processingProgress = clamp(frame, [264, 345], [0, 1]);
+  const completedOpacity = clamp(frame, [338, 350], [0, 1]);
+  const replayX = clamp(frame, [352, 405], [650, 130]);
+  const replayOpacity = clamp(frame, [346, 357], [0, 1]);
+  const successVerdictOpacity = clamp(frame, [397, 415], [0, 1]);
 
   return (
     <AbsoluteFill
@@ -149,7 +156,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.4,
+          opacity: 0.42,
           backgroundImage:
             "linear-gradient(#d8d5cd 1px, transparent 1px), linear-gradient(90deg, #d8d5cd 1px, transparent 1px)",
           backgroundSize: "48px 48px",
@@ -160,15 +167,15 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         style={{
           position: "absolute",
           zIndex: 10,
-          top: 54,
+          top: 52,
           left: 100,
           right: 100,
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "space-between",
           borderBottom: `2px solid ${ink}`,
-          paddingBottom: 20,
-          opacity: intro,
+          paddingBottom: 18,
+          opacity: headerIn,
         }}
       >
         <div>
@@ -193,256 +200,259 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
             letterSpacing: 1.4,
           }}
         >
-          {modeLabels[props.mode]} / {props.trace.length} EVENTS
+          SAME payment_intent_id / TWO HTTP REQUESTS
         </div>
       </header>
 
-      <Scene end={105} frame={frame} start={0}>
+      <Scene end={195} frame={frame} start={0}>
         <div
           style={{
-            display: "grid",
-            height: "100%",
-            gridTemplateColumns: "1.15fr .85fr",
-            gap: 100,
-            alignItems: "center",
+            color: red,
+            ...mono,
+            fontSize: 16,
+            fontWeight: 750,
+            letterSpacing: 2.4,
           }}
         >
-          <div>
-            <Label>THE INVARIANT</Label>
-            <h1
-              style={{
-                maxWidth: 920,
-                margin: "26px 0 0",
-                fontSize: 94,
-                fontWeight: 600,
-                lineHeight: 0.96,
-                letterSpacing: -6,
-              }}
-            >
-              One payment intent.
-              <br />
-              <span style={{ color: blue }}>At most one charge.</span>
-            </h1>
-          </div>
-          <div style={{ borderTop: `4px solid ${ink}`, paddingTop: 28 }}>
-            <Label color={muted}>BUSINESS IDENTITY</Label>
-            <code
-              style={{
-                ...mono,
-                display: "block",
-                marginTop: 26,
-                color: ink,
-                fontSize: 31,
-              }}
-            >
-              payment_intent_id
-              <br />
-              = pi_ord_1042
-            </code>
-            <p
-              style={{
-                margin: "32px 0 0",
-                color: muted,
-                fontSize: 24,
-                lineHeight: 1.5,
-              }}
-            >
-              Transport retries do not create a new business operation.
-            </p>
-          </div>
+          WITHOUT OPERATION OWNERSHIP
         </div>
+
+        <svg
+          style={{ display: "block", marginTop: 28 }}
+          viewBox="0 0 1720 660"
+        >
+          <defs>
+            <marker
+              id="failure-arrow"
+              markerHeight="8"
+              markerWidth="8"
+              orient="auto"
+              refX="6"
+              refY="4"
+            >
+              <path d="M0,0 L0,8 L7,4 z" fill={red} />
+            </marker>
+          </defs>
+
+          <PhaseLabel x={80}>CALLERS</PhaseLabel>
+          <PhaseLabel x={500}>PAYMENT API</PhaseLabel>
+          <PhaseLabel x={1000}>PROVIDER</PhaseLabel>
+          <PhaseLabel x={1460}>LEDGER</PhaseLabel>
+
+          <line stroke={rule} x1="450" x2="450" y1="75" y2="520" />
+          <line stroke={rule} x1="930" x2="930" y1="75" y2="520" />
+          <line stroke={rule} x1="1400" x2="1400" y1="75" y2="520" />
+
+          <text
+            fill={muted}
+            fontFamily={mono.fontFamily}
+            fontSize="16"
+            x="80"
+            y="185"
+          >
+            REQUEST A
+          </text>
+          <text
+            fill={muted}
+            fontFamily={mono.fontFamily}
+            fontSize="16"
+            x="80"
+            y="385"
+          >
+            REQUEST B
+          </text>
+
+          <path
+            d="M130 220 H1510"
+            fill="none"
+            markerEnd="url(#failure-arrow)"
+            stroke={red}
+            strokeWidth="3"
+          />
+          <path
+            d="M130 420 H1510"
+            fill="none"
+            markerEnd="url(#failure-arrow)"
+            stroke={red}
+            strokeWidth="3"
+          />
+
+          <line stroke={blue} strokeWidth="8" x1="540" x2="540" y1="155" y2="485" />
+          <text
+            fill={blue}
+            fontFamily={mono.fontFamily}
+            fontSize="15"
+            fontWeight="700"
+            textAnchor="middle"
+            x="540"
+            y="525"
+          >
+            NO SHARED KEY OR CLAIM
+          </text>
+
+          <circle cx="1060" cy="220" fill={paper} r="55" stroke={red} strokeWidth="3" />
+          <circle cx="1060" cy="420" fill={paper} r="55" stroke={red} strokeWidth="3" />
+          <text fill={red} fontSize="28" fontWeight="800" textAnchor="middle" x="1060" y="228">
+            CHARGE
+          </text>
+          <text fill={red} fontSize="28" fontWeight="800" textAnchor="middle" x="1060" y="428">
+            CHARGE
+          </text>
+
+          <Token color={blue} label="A" x={failureA} y={220} />
+          <Token color={cyan} label="B" x={failureB} y={420} />
+
+          <g opacity={firstChargeOpacity}>
+            <rect fill="#f5e5e2" height="70" stroke={red} strokeWidth="2" width="170" x="1480" y="185" />
+            <text fill={red} fontFamily={mono.fontFamily} fontSize="22" fontWeight="700" textAnchor="middle" x="1565" y="228">
+              − $499.90
+            </text>
+          </g>
+          <g opacity={secondChargeOpacity}>
+            <rect fill="#f5e5e2" height="70" stroke={red} strokeWidth="2" width="170" x="1480" y="385" />
+            <text fill={red} fontFamily={mono.fontFamily} fontSize="22" fontWeight="700" textAnchor="middle" x="1565" y="428">
+              − $499.90
+            </text>
+          </g>
+
+          <g opacity={failureVerdictOpacity}>
+            <line stroke={red} strokeWidth="4" x1="80" x2="1640" y1="585" y2="585" />
+            <text fill={red} fontSize="27" fontWeight="800" x="80" y="630">
+              1 BUSINESS OPERATION → 2 FINANCIAL SIDE EFFECTS
+            </text>
+          </g>
+        </svg>
       </Scene>
 
-      <Scene end={220} frame={frame} start={90}>
-        <div>
-          <Label color={failed ? red : blue}>THE RACE</Label>
-          <h2
-            style={{
-              margin: "22px 0 58px",
-              fontSize: 68,
-              fontWeight: 600,
-              letterSpacing: -4,
-            }}
-          >
-            Two requests arrive. Who owns execution?
-          </h2>
-          <RequestLine label="REQUEST A / 0ms" target="provider charge #1" tone={red} />
-          <RequestLine label="REQUEST B / +12ms" target="provider charge #2" tone={red} />
-          <div
-            style={{
-              display: "flex",
-              marginTop: 32,
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderTop: `4px solid ${red}`,
-              paddingTop: 24,
-            }}
-          >
-            <span style={{ color: muted, fontSize: 23 }}>
-              No shared operation identity. Both requests execute.
-            </span>
-            <strong style={{ color: red, fontSize: 30 }}>
-              INVARIANT BROKEN
-            </strong>
-          </div>
-        </div>
-      </Scene>
-
-      <Scene end={345} frame={frame} start={205}>
-        <div>
-          <Label color={green}>OWNERSHIP</Label>
-          <h2
-            style={{
-              margin: "22px 0 55px",
-              fontSize: 68,
-              fontWeight: 600,
-              letterSpacing: -4,
-            }}
-          >
-            One operation. One execution owner.
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 70px 1.25fr 70px 1fr",
-              alignItems: "stretch",
-            }}
-          >
-            <div style={{ borderTop: `3px solid ${blue}`, paddingTop: 24 }}>
-              <Label>CALLERS</Label>
-              <p style={{ margin: "22px 0 0", fontSize: 30, lineHeight: 1.5 }}>
-                Request A
-                <br />
-                Request B
-              </p>
-              <code style={{ ...mono, color: muted, fontSize: 17 }}>
-                same key + payload
-              </code>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                placeItems: "center",
-                color: muted,
-                fontSize: 34,
-              }}
-            >
-              →
-            </div>
-            <div style={{ borderTop: `3px solid ${ink}`, paddingTop: 24 }}>
-              <Label color={ink}>DURABLE KEY RECORD</Label>
-              <p
-                style={{
-                  margin: "22px 0 0",
-                  fontSize: 29,
-                  fontWeight: 700,
-                  lineHeight: 1.4,
-                }}
-              >
-                processing → completed
-              </p>
-              <p style={{ margin: "15px 0 0", color: muted, fontSize: 20 }}>
-                request hash + stored response
-              </p>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                placeItems: "center",
-                color: muted,
-                fontSize: 34,
-              }}
-            >
-              →
-            </div>
-            <div style={{ borderTop: `3px solid ${green}`, paddingTop: 24 }}>
-              <Label color={green}>OUTCOME</Label>
-              <p
-                style={{
-                  margin: "22px 0 0",
-                  color: green,
-                  fontSize: 30,
-                  fontWeight: 700,
-                  lineHeight: 1.5,
-                }}
-              >
-                1 provider call
-                <br />
-                1 stored replay
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 58,
-              borderTop: `1px solid ${rule}`,
-              paddingTop: 25,
-              color: muted,
-              fontSize: 23,
-            }}
-          >
-            The idempotency key identifies the operation. The record selects its
-            owner and preserves its result.
-          </div>
-        </div>
-      </Scene>
-
-      <Scene end={450} frame={frame} keepVisible start={330}>
+      <Scene end={450} frame={frame} keepVisible start={180}>
         <div
           style={{
-            display: "grid",
-            height: "100%",
-            placeItems: "center",
-            textAlign: "center",
+            color: green,
+            ...mono,
+            fontSize: 16,
+            fontWeight: 750,
+            letterSpacing: 2.4,
           }}
         >
-          <div>
-            <Label>INTERVIEW ANSWER</Label>
-            <h2
-              style={{
-                maxWidth: 1450,
-                margin: "38px auto 0",
-                fontSize: 88,
-                fontWeight: 600,
-                lineHeight: 1.03,
-                letterSpacing: -5,
-              }}
-            >
-              Same operation.
-              <br />
-              <span style={{ color: blue }}>One side effect.</span>
-              <br />
-              <span style={{ color: green }}>Same response.</span>
-            </h2>
-            <p
-              style={{
-                maxWidth: 1260,
-                margin: "45px auto 0",
-                color: muted,
-                fontSize: 26,
-                lineHeight: 1.55,
-              }}
-            >
-              Durable idempotency state produces an effectively-once side effect
-              under at-least-once delivery. It is not a blanket exactly-once
-              guarantee.
-            </p>
-          </div>
+          IDEMPOTENCY KEY SELECTS ONE OWNER
         </div>
+
+        <svg
+          style={{ display: "block", marginTop: 28 }}
+          viewBox="0 0 1720 660"
+        >
+          <defs>
+            <marker
+              id="success-arrow"
+              markerHeight="8"
+              markerWidth="8"
+              orient="auto"
+              refX="6"
+              refY="4"
+            >
+              <path d="M0,0 L0,8 L7,4 z" fill={green} />
+            </marker>
+          </defs>
+
+          <PhaseLabel x={80}>CALLERS</PhaseLabel>
+          <PhaseLabel x={560}>DURABLE KEY RECORD</PhaseLabel>
+          <PhaseLabel x={1070}>PROVIDER</PhaseLabel>
+          <PhaseLabel x={1460}>LEDGER</PhaseLabel>
+
+          <line stroke={rule} x1="450" x2="450" y1="75" y2="520" />
+          <line stroke={rule} x1="950" x2="950" y1="75" y2="520" />
+          <line stroke={rule} x1="1400" x2="1400" y1="75" y2="520" />
+
+          <path d="M130 220 H650 H1510" fill="none" markerEnd="url(#success-arrow)" stroke={green} strokeWidth="3" />
+          <path d="M130 420 H650" fill="none" stroke={muted} strokeWidth="3" />
+
+          <text fill={muted} fontFamily={mono.fontFamily} fontSize="16" x="80" y="185">
+            REQUEST A
+          </text>
+          <text fill={muted} fontFamily={mono.fontFamily} fontSize="16" x="80" y="385">
+            REQUEST B
+          </text>
+
+          <rect fill={paper} height="270" stroke={ink} strokeWidth="3" width="310" x="590" y="170" />
+          <text fill={ink} fontFamily={mono.fontFamily} fontSize="18" fontWeight="800" textAnchor="middle" x="745" y="215">
+            KEY: pay-1042
+          </text>
+          <text fill={green} fontSize="23" fontWeight="800" textAnchor="middle" x="745" y="275">
+            REQUEST A = OWNER
+          </text>
+          <text fill={muted} fontSize="23" fontWeight="700" textAnchor="middle" x="745" y="325">
+            REQUEST B = WAITS
+          </text>
+          <line stroke={rule} x1="630" x2="860" y1="355" y2="355" />
+          <line stroke={green} strokeWidth="6" x1="630" x2={630 + 230 * processingProgress} y1="355" y2="355" />
+          <text fill={muted} fontFamily={mono.fontFamily} fontSize="15" textAnchor="middle" x="745" y="395">
+            processing
+          </text>
+          <text fill={green} fontFamily={mono.fontFamily} fontSize="15" opacity={completedOpacity} textAnchor="middle" x="745" y="422">
+            completed · response stored
+          </text>
+
+          <circle cx="1120" cy="220" fill={paper} r="60" stroke={green} strokeWidth="3" />
+          <text fill={green} fontSize="27" fontWeight="800" textAnchor="middle" x="1120" y="215">
+            ONE
+          </text>
+          <text fill={green} fontSize="20" fontWeight="700" textAnchor="middle" x="1120" y="243">
+            CHARGE
+          </text>
+
+          <Token color={blue} label="A" x={frame < 263 ? claimA : ownerA} y={220} />
+          <Token color={cyan} label="B" x={claimB < ownerB ? claimB : ownerB} y={420} />
+
+          <g opacity={ownerLabelOpacity}>
+            <text fill={green} fontFamily={mono.fontFamily} fontSize="15" fontWeight="800" textAnchor="middle" x="650" y="152">
+              OWNER CONTINUES
+            </text>
+            <text fill={muted} fontFamily={mono.fontFamily} fontSize="15" fontWeight="700" textAnchor="middle" x="650" y="480">
+              DUPLICATE STOPS HERE
+            </text>
+          </g>
+
+          <g opacity={completedOpacity}>
+            <rect fill="#e2eee7" height="70" stroke={green} strokeWidth="2" width="170" x="1480" y="185" />
+            <text fill={green} fontFamily={mono.fontFamily} fontSize="22" fontWeight="700" textAnchor="middle" x="1565" y="228">
+              − $499.90
+            </text>
+          </g>
+
+          <g opacity={replayOpacity}>
+            <path
+              d="M 650 420 C 650 530 260 530 130 450"
+              fill="none"
+              markerEnd="url(#success-arrow)"
+              stroke={green}
+              strokeDasharray="10 8"
+              strokeWidth="3"
+            />
+            <rect fill={green} height="26" transform={`translate(${replayX - 13} 502)`} width="26" />
+            <text fill={green} fontFamily={mono.fontFamily} fontSize="16" fontWeight="800" textAnchor="middle" x="440" y="570">
+              STORED 200 RESPONSE REPLAYED TO REQUEST B
+            </text>
+          </g>
+
+          <g opacity={successVerdictOpacity}>
+            <line stroke={green} strokeWidth="4" x1="80" x2="1640" y1="610" y2="610" />
+            <text fill={green} fontSize="27" fontWeight="800" x="80" y="652">
+              1 BUSINESS OPERATION → 1 CHARGE → SAME RESPONSE
+            </text>
+          </g>
+        </svg>
       </Scene>
 
       <footer
         style={{
           position: "absolute",
           right: 100,
-          bottom: 45,
+          bottom: 42,
           left: 100,
           display: "flex",
           justifyContent: "space-between",
           borderTop: `1px solid ${rule}`,
-          paddingTop: 14,
+          paddingTop: 13,
           color: muted,
           ...mono,
           fontSize: 13,
@@ -450,7 +460,11 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         }}
       >
         <span>backend-systems-visual-lab / 01</span>
-        <span>{props.summary.providerCharges} CHARGE / {props.summary.replayedResponses} REPLAY</span>
+        <span>
+          {frame < 190
+            ? "BASELINE: 2 CHARGES"
+            : `IDEMPOTENT: ${props.summary.providerCharges} CHARGE / ${props.summary.replayedResponses} REPLAY`}
+        </span>
       </footer>
     </AbsoluteFill>
   );

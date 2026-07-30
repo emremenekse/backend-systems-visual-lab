@@ -1,8 +1,10 @@
 # Guided lesson
 
 Vite + React lesson built around three ideas: the business invariant, execution
-ownership, and the guarantee boundary. It runs a real race and keeps the video,
-implementation sketch, and raw event trace as optional technical depth.
+ownership, and the guarantee boundary. A single animated timeline shows request
+A, request B, the owner claim, provider side effects, ledger entries, and
+response replay. The video, implementation sketch, and raw event trace remain
+optional technical depth.
 
 ```bash
 npm install

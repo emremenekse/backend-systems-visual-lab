@@ -1,58 +1,27 @@
 import { describe, expect, it } from "vitest";
-import {
-  createStorySteps,
-  lessonModes,
-  sixtySecondAnswer,
-} from "./lesson";
-import type { LabRunResult, PaymentMode } from "./types";
+import { lessonModes, sixtySecondAnswer } from "./lesson";
 
-function createResult(
-  mode: PaymentMode,
-  providerCharges: number,
-): LabRunResult {
-  return {
-    runId: "run-1",
-    mode,
-    paymentIntentId: "intent-1",
-    results: [],
-    provider: {
-      paymentIntentId: "intent-1",
-      attempts: providerCharges,
-      charges: providerCharges,
-      replays: 0,
-    },
-    summary: {
-      providerAttempts: providerCharges,
-      providerCharges,
-      replayedResponses: mode === "idempotent-api" ? 1 : 0,
-      verdict: "test",
-    },
-    trace: [],
-  };
-}
-
-describe("guided lesson content", () => {
-  it("turns an unprotected run into a four-step failure explanation", () => {
-    const steps = createStorySteps(createResult("unprotected", 2));
-
-    expect(steps).toHaveLength(4);
-    expect(steps[1]?.title).toContain("Both requests");
-    expect(steps[2]?.title).toContain("two charges");
-    expect(steps[3]?.tone).toBe("danger");
+describe("lesson content", () => {
+  it("defines the unprotected failure in business-operation terms", () => {
+    expect(lessonModes.unprotected.guarantee).toBe("None");
+    expect(lessonModes.unprotected.interviewLine).toContain(
+      "business operation",
+    );
   });
 
-  it("explains response replay for the idempotent mode", () => {
-    const steps = createStorySteps(createResult("idempotent-api", 1));
+  it("describes ownership and replay for an idempotent API", () => {
+    const lesson = lessonModes["idempotent-api"];
 
-    expect(steps[1]?.title).toContain("Idempotency key");
-    expect(steps[2]?.explanation).toContain("replay");
-    expect(steps[3]?.tone).toBe("success");
+    expect(lesson.mechanism).toContain("Key claim");
+    expect(lesson.explanation).toContain("stored response");
+    expect(lesson.limitation).toContain("provider timeouts");
   });
 
-  it("includes guarantee limits and a complete interview answer", () => {
+  it("keeps the database boundary and interview guarantee explicit", () => {
     expect(lessonModes["database-constraint"].limitation).toContain(
       "idempotent API",
     );
     expect(sixtySecondAnswer).toContain("effectively-once");
+    expect(sixtySecondAnswer).toContain("at-least-once");
   });
 });

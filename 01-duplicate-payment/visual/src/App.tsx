@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   ArrowRight,
   ChevronDown,
   Play,
@@ -8,7 +7,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { runLab } from "./api";
 import {
-  createStorySteps,
   lessonModes,
   sixtySecondAnswer,
 } from "./lesson";
@@ -101,116 +99,221 @@ function MobileTimeline({ events }: { events: TraceEvent[] }) {
   );
 }
 
-interface SystemNodeProps {
-  active: boolean;
-  label: string;
-  detail: string;
-  tone: "neutral" | "danger" | "success";
-}
-
-function SystemNode({
-  active,
+function MovingToken({
+  begin,
+  color,
   label,
-  detail,
-  tone,
-}: SystemNodeProps) {
+  path,
+}: {
+  begin: string;
+  color: string;
+  label: string;
+  path: string;
+}) {
   return (
-    <div className="system-node" data-active={active} data-tone={tone}>
-      <span>{label}</span>
-      <small>{detail}</small>
-    </div>
+    <g className="moving-token">
+      <circle cx="0" cy="0" fill={color} r="13" />
+      <text
+        dominantBaseline="middle"
+        fill="#111"
+        textAnchor="middle"
+        x="0"
+        y="1"
+      >
+        {label}
+      </text>
+      <animateMotion
+        begin={begin}
+        dur="2.4s"
+        fill="freeze"
+        path={path}
+      />
+    </g>
   );
 }
 
-function SystemMap({
-  result,
-  activeStep,
-}: {
-  result: LabRunResult;
-  activeStep: number;
-}) {
-  const step = createStorySteps(result)[activeStep];
-  const tone = step?.tone ?? "neutral";
-  const revealSideEffect = activeStep >= 2;
+function ExecutionDiagram({ result }: { result: LabRunResult }) {
+  const unprotected = result.mode === "unprotected";
+  const databaseGuard = result.mode === "database-constraint";
+  const idempotent = result.mode === "idempotent-api";
+  const ownerLabel = unprotected
+    ? "NO OWNER"
+    : databaseGuard
+      ? "UNIQUE(payment_intent_id)"
+      : "KEY(pay-1042)";
+  const caption = unprotected
+    ? "A and B both cross the provider boundary, so the ledger receives two charges."
+    : databaseGuard
+      ? "PostgreSQL gives A ownership. B conflicts before it can call the provider."
+      : "A owns the key and calls the provider. B waits, then receives A's stored response.";
+
+  const pathA = "M 92 116 H 286 H 496 H 640";
+  const pathB = unprotected
+    ? "M 92 226 H 286 H 496 H 640"
+    : "M 92 226 H 286";
 
   return (
-    <figure className="system-figure">
-      <div
-        className="system-map"
-        aria-label="Payment flow"
+    <figure className="execution-figure" key={result.runId}>
+      <svg
+        aria-labelledby={`execution-title-${result.runId} execution-desc-${result.runId}`}
+        className="execution-svg"
         role="img"
+        viewBox="0 0 720 350"
       >
-        <SystemNode
-          active={step?.focus === "customer"}
-          detail="$499.90"
-          label="Customer"
-          tone={tone}
-        />
-        <span className="flow-arrow" aria-hidden="true">→</span>
-        <div
-          className="request-pair"
-          data-active={step?.focus === "customer" || step?.focus === "api"}
-          data-tone={tone}
-        >
-          <span>HTTP A</span>
-          <span>HTTP B</span>
-          <small>same payment_intent_id</small>
-        </div>
-        <span className="flow-arrow" aria-hidden="true">→</span>
-        <SystemNode
-          active={step?.focus === "api"}
-          detail={lessonModes[result.mode].mechanism}
-          label="Payment API"
-          tone={tone}
-        />
-        <span className="flow-arrow" aria-hidden="true">→</span>
-        <SystemNode
-          active={step?.focus === "database"}
-          detail={
-            result.mode === "unprotected"
-              ? "no guard"
-              : result.mode === "database-constraint"
-                ? "unique index"
-                : "key record"
-          }
-          label="PostgreSQL"
-          tone={tone}
-        />
-        <span className="flow-arrow" aria-hidden="true">→</span>
-        <SystemNode
-          active={step?.focus === "provider"}
-          detail={
-            revealSideEffect
-              ? `${result.summary.providerAttempts} outbound call${
-                  result.summary.providerAttempts === 1 ? "" : "s"
-                }`
-              : "not revealed yet"
-          }
-          label="Provider"
-          tone={tone}
-        />
-        <span className="flow-arrow" aria-hidden="true">→</span>
-        <div
-          className="ledger-node"
-          data-active={step?.focus === "result"}
-          data-tone={tone}
-        >
-          <span>Ledger</span>
-          <div>
-            {revealSideEffect ? (
-              Array.from({ length: result.summary.providerCharges }).map(
-                (_, index) => <code key={index}>− $499.90</code>,
-              )
-            ) : (
-              <small>no entries shown</small>
-            )}
-          </div>
-        </div>
+        <title id={`execution-title-${result.runId}`}>
+          Two concurrent requests for one payment operation
+        </title>
+        <desc id={`execution-desc-${result.runId}`}>{caption}</desc>
+        <defs>
+          <marker
+            id={`arrow-${result.runId}`}
+            markerHeight="7"
+            markerWidth="7"
+            orient="auto-start-reverse"
+            refX="5"
+            refY="3.5"
+          >
+            <path d="M0,0 L0,7 L6,3.5 z" fill="currentColor" />
+          </marker>
+        </defs>
+
+        <g className="phase-labels">
+          <text x="92" y="24">SAME OPERATION</text>
+          <text x="286" y="24">OWNERSHIP</text>
+          <text x="496" y="24">SIDE EFFECT</text>
+          <text x="640" y="24">LEDGER</text>
+        </g>
+
+        <g className="phase-rules">
+          <line x1="248" x2="248" y1="42" y2="322" />
+          <line x1="450" x2="450" y1="42" y2="322" />
+          <line x1="602" x2="602" y1="42" y2="322" />
+        </g>
+
+        <g className="lane-labels">
+          <text x="12" y="121">REQUEST A</text>
+          <text x="12" y="231">REQUEST B</text>
+        </g>
+
+        <g className="flow-paths">
+          <path
+            className={unprotected ? "danger-path" : "success-path"}
+            d={pathA}
+            markerEnd={`url(#arrow-${result.runId})`}
+          />
+          <path
+            className={unprotected ? "danger-path" : "muted-path"}
+            d={pathB}
+            markerEnd={`url(#arrow-${result.runId})`}
+          />
+        </g>
+
+        <g className="api-gate">
+          <line x1="202" x2="202" y1="78" y2="264" />
+          <text x="202" y="62" textAnchor="middle">API</text>
+        </g>
+
+        <g className="owner-node">
+          <rect
+            className={unprotected ? "danger-node" : "success-node"}
+            height="72"
+            width="146"
+            x="266"
+            y="135"
+          />
+          <text x="339" y="165" textAnchor="middle">{ownerLabel}</text>
+          <text className="node-detail" x="339" y="187" textAnchor="middle">
+            {unprotected
+              ? "A executes · B executes"
+              : databaseGuard
+                ? "A = owner · B = conflict"
+                : "A = owner · B = waits"}
+          </text>
+        </g>
+
+        <g className="provider-node">
+          <circle
+            className={unprotected ? "danger-node" : "success-node"}
+            cx="514"
+            cy="171"
+            r="45"
+          />
+          <text x="514" y="166" textAnchor="middle">PROVIDER</text>
+          <text className="node-detail" x="514" y="188" textAnchor="middle">
+            {result.summary.providerAttempts} call
+            {result.summary.providerAttempts === 1 ? "" : "s"}
+          </text>
+        </g>
+
+        <g className="ledger-entries">
+          <rect
+            className={unprotected ? "danger-node" : "success-node"}
+            height="46"
+            width="68"
+            x="634"
+            y={unprotected ? "93" : "148"}
+          />
+          <text
+            x="668"
+            y={unprotected ? "121" : "176"}
+            textAnchor="middle"
+          >
+            −$499
+          </text>
+          {unprotected ? (
+            <>
+              <rect
+                className="danger-node"
+                height="46"
+                width="68"
+                x="634"
+                y="203"
+              />
+              <text x="668" y="231" textAnchor="middle">−$499</text>
+            </>
+          ) : null}
+        </g>
+
+        {databaseGuard ? (
+          <g className="stopped-request">
+            <line x1="301" x2="321" y1="216" y2="236" />
+            <line x1="321" x2="301" y1="216" y2="236" />
+            <text x="332" y="231">CONFLICT</text>
+          </g>
+        ) : null}
+
+        {idempotent ? (
+          <g className="replay-path">
+            <path
+              d="M 360 208 C 360 302 132 302 92 240"
+              markerEnd={`url(#arrow-${result.runId})`}
+            />
+            <text x="225" y="317" textAnchor="middle">
+              STORED 200 RESPONSE REPLAYED TO B
+            </text>
+          </g>
+        ) : null}
+
+        <MovingToken begin="0.1s" color="#8fb4ff" label="A" path={pathA} />
+        <MovingToken begin="0.35s" color="#67e8f9" label="B" path={pathB} />
+
+        {idempotent ? (
+          <g className="replay-token">
+            <rect fill="#86efac" height="18" rx="2" width="18" x="-9" y="-9" />
+            <animateMotion
+              begin="2.7s"
+              dur="1.4s"
+              fill="freeze"
+              path="M 360 208 C 360 302 132 302 92 240"
+            />
+          </g>
+        ) : null}
+      </svg>
+
+      <div className="execution-reading" data-tone={unprotected ? "danger" : "success"}>
+        <span>{unprotected ? "INVARIANT BROKEN" : "INVARIANT PRESERVED"}</span>
+        <strong>{caption}</strong>
       </div>
-      <figcaption>
-        The result is derived from the backend trace, not simulated in the
-        browser.
-      </figcaption>
     </figure>
   );
 }
@@ -239,7 +342,6 @@ export function App() {
   const [mode, setMode] = useState<PaymentMode>("unprotected");
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [result, setResult] = useState<LabRunResult | null>(null);
-  const [storyStep, setStoryStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -252,7 +354,6 @@ export function App() {
     controllerRef.current?.abort();
     setMode(nextMode);
     setResult(null);
-    setStoryStep(0);
     setError(null);
   };
 
@@ -268,7 +369,6 @@ export function App() {
     try {
       const nextResult = await runLab(requestedMode, controller.signal);
       setResult(nextResult);
-      setStoryStep(0);
 
       window.setTimeout(() => {
         document
@@ -293,9 +393,6 @@ export function App() {
   };
 
   const selectedLesson = lessonModes[mode];
-  const storySteps = result ? createStorySteps(result) : [];
-  const currentStory = storySteps[storyStep];
-  const isFinalStep = storyStep === storySteps.length - 1;
   const predictionWasCorrect =
     prediction === "two" && result?.mode === "unprotected";
 
@@ -479,85 +576,24 @@ export function App() {
               {result ? (
                 <article className="guided-result">
                   <header className="result-header">
-                    <div>
-                      <span>RUN {shortId(result.runId)}</span>
-                      <strong>
-                        {String(storyStep + 1).padStart(2, "0")} /{" "}
-                        {String(storySteps.length).padStart(2, "0")}
-                      </strong>
-                    </div>
-                    <div className="step-selector" aria-label="Explanation steps">
-                      {storySteps.map((step, index) => (
-                        <button
-                          aria-label={`Go to step ${index + 1}: ${step.title}`}
-                          aria-pressed={index === storyStep}
-                          data-current={index === storyStep}
-                          key={step.label}
-                          onClick={() => setStoryStep(index)}
-                          type="button"
-                        >
-                          {String(index + 1).padStart(2, "0")}
-                        </button>
-                      ))}
-                    </div>
+                    <span>RUN {shortId(result.runId)}</span>
+                    <strong>{lessonModes[result.mode].title}</strong>
                   </header>
 
-                  <SystemMap activeStep={storyStep} result={result} />
+                  <ExecutionDiagram result={result} />
 
-                  {currentStory ? (
-                    <div
-                      aria-live="polite"
-                      className="story"
-                      data-tone={currentStory.tone}
-                    >
-                      <span>{currentStory.label}</span>
-                      <div>
-                        <h3>{currentStory.title}</h3>
-                        <p>{currentStory.explanation}</p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <footer className="story-footer">
-                    <button
-                      disabled={storyStep === 0}
-                      onClick={() =>
-                        setStoryStep((current) => Math.max(0, current - 1))
-                      }
-                      type="button"
-                    >
-                      <ArrowLeft aria-hidden="true" size={15} />
-                      Previous
-                    </button>
-                    <p>One decision or side effect per step.</p>
-                    <button
-                      disabled={isFinalStep}
-                      onClick={() =>
-                        setStoryStep((current) =>
-                          Math.min(storySteps.length - 1, current + 1),
-                        )
-                      }
-                      type="button"
-                    >
-                      Next
-                      <ArrowRight aria-hidden="true" size={15} />
-                    </button>
-                  </footer>
-
-                  {isFinalStep ? (
-                    <div className="result-stats">
-                      <div><span>Provider calls</span><strong>{result.summary.providerAttempts}</strong></div>
-                      <div><span>Charges</span><strong>{result.summary.providerCharges}</strong></div>
-                      <div><span>Replayed responses</span><strong>{result.summary.replayedResponses}</strong></div>
-                      <p data-correct={predictionWasCorrect}>
-                        {result.mode === "unprotected" && prediction
-                          ? predictionWasCorrect
-                            ? "Your prediction matched the trace."
-                            : "The trace shows why the first prediction was wrong."
-                          : selectedLesson.guarantee}
-                      </p>
-                    </div>
-                  ) : null}
+                  <div className="result-stats">
+                    <div><span>Provider calls</span><strong>{result.summary.providerAttempts}</strong></div>
+                    <div><span>Charges</span><strong>{result.summary.providerCharges}</strong></div>
+                    <div><span>Replayed responses</span><strong>{result.summary.replayedResponses}</strong></div>
+                    <p data-correct={predictionWasCorrect}>
+                      {result.mode === "unprotected" && prediction
+                        ? predictionWasCorrect
+                          ? "Your prediction matched the live trace."
+                          : "The live trace shows why the first prediction was wrong."
+                        : selectedLesson.guarantee}
+                    </p>
+                  </div>
                 </article>
               ) : (
                 <div className="result-empty">
