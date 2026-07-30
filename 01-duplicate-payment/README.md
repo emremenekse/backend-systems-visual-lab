@@ -10,10 +10,10 @@ docker compose -f infra/compose.yaml up --build
 ```
 
 Open [http://localhost:4173](http://localhost:4173). One experiment keeps the
-payment and concurrent requests fixed while you switch the ownership rule. You
-can predict the unprotected result, run any of the three modes, and compare the
-owner claim, provider call, ledger effect, and response replay on one execution
-timeline. The Remotion recap and raw trace are optional.
+payment and concurrent requests fixed while you switch the ownership rule. Run
+any of the three modes and compare what request B does, how many times the
+customer is charged, and whether a stored response is replayed. The Remotion
+recap and raw trace are optional.
 
 Stop the lab with:
 
@@ -25,9 +25,9 @@ docker compose -f infra/compose.yaml down
 
 | Mode | Result |
 | --- | --- |
-| Unprotected | Two provider charges; invariant fails |
-| Database constraint | One charge; the duplicate is rejected |
-| Idempotent API | One charge; the stored response is replayed |
+| Unprotected | The customer can be charged twice |
+| Database constraint | The customer is charged once; request B returns an error |
+| Idempotent API | The customer is charged once; both requests return the same response |
 
 ## Stack
 

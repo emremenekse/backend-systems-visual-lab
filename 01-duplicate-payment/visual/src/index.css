@@ -248,9 +248,6 @@ video:focus-visible {
 }
 
 .scenario-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(24rem, 1.1fr);
-  gap: 6rem;
   padding-left: 4.5rem;
 }
 
@@ -291,59 +288,6 @@ video:focus-visible {
   margin: 1rem 0 0;
   color: var(--muted);
   font-size: 0.75rem;
-}
-
-.prediction {
-  min-width: 0;
-  margin: 0;
-  border: 0;
-  padding: 0;
-}
-
-.prediction legend {
-  max-width: 36rem;
-  margin-bottom: 1.5rem;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
-  line-height: 1.3;
-}
-
-.prediction > div {
-  border-top: 1px solid var(--strong-rule);
-}
-
-.prediction > div button {
-  display: grid;
-  width: 100%;
-  min-height: 63px;
-  grid-template-columns: 1.3rem 1fr auto;
-  align-items: center;
-  gap: 0.75rem;
-  border: 0;
-  border-bottom: 1px solid var(--rule);
-  background: transparent;
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-}
-
-.prediction > div button:hover,
-.prediction > div button[data-selected="true"] {
-  background: var(--blue-soft);
-}
-
-.prediction > div button > span {
-  color: var(--blue);
-  font-size: 0.7rem;
-}
-
-.prediction > div button strong {
-  font-size: 0.87rem;
-}
-
-.prediction > div button small {
-  color: var(--muted);
-  font-size: 0.71rem;
 }
 
 .action-button {
@@ -408,39 +352,17 @@ video:focus-visible {
   border-color: #f5f5f4;
 }
 
-.experiment-section .request-fixture > div,
-.experiment-section .prediction > div,
-.experiment-section .prediction > div button {
+.experiment-section .request-fixture > div {
   border-color: #383836;
 }
 
 .experiment-section .request-fixture span,
-.experiment-section .request-fixture p,
-.experiment-section .prediction > div button small {
+.experiment-section .request-fixture p {
   color: #aaa9a3;
 }
 
-.experiment-section .request-fixture code,
-.experiment-section .prediction legend,
-.experiment-section .prediction > div button {
+.experiment-section .request-fixture code {
   color: #f5f5f4;
-}
-
-.experiment-section .prediction > div button > span {
-  color: #8fb4ff;
-}
-
-.experiment-section .prediction > div button:hover {
-  background: #191919;
-}
-
-.experiment-section .prediction > div button[data-selected="true"] {
-  background: #f1f0eb;
-  color: #151515;
-}
-
-.experiment-section .prediction > div button[data-selected="true"] small {
-  color: #555550;
 }
 
 .mode-selector {
@@ -791,10 +713,6 @@ video:focus-visible {
   line-height: 1.5;
 }
 
-.result-stats > p[data-correct="true"] {
-  color: #86efac;
-}
-
 .mechanism-notes {
   margin: 0 0 0 4.5rem;
   border-top: 3px solid var(--ink);
@@ -1127,11 +1045,6 @@ video:focus-visible {
     gap: 1rem;
   }
 
-  .scenario-layout {
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
-  }
-
   .result-stats {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1199,19 +1112,6 @@ video:focus-visible {
   .model-answer,
   .recap-video {
     margin-left: 0;
-  }
-
-  .scenario-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .prediction > div button {
-    grid-template-columns: 1.2rem 1fr;
-  }
-
-  .prediction > div button small {
-    grid-column: 2;
-    padding-bottom: 0.75rem;
   }
 
   .mode-head {

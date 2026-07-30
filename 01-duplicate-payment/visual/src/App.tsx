@@ -24,13 +24,23 @@ const modes: PaymentMode[] = [
   "idempotent-api",
 ];
 
-const predictions = [
-  { value: "one", label: "One charge", note: "One request is stopped" },
-  { value: "two", label: "Two charges", note: "Both requests execute" },
-  { value: "unsure", label: "Not sure", note: "Run the experiment" },
-] as const;
-
-type Prediction = (typeof predictions)[number]["value"];
+const modeRows: Record<
+  PaymentMode,
+  { requestB: string; customerResult: string }
+> = {
+  unprotected: {
+    requestB: "Request B also calls the payment provider",
+    customerResult: "The customer can be charged twice",
+  },
+  "database-constraint": {
+    requestB: "Request B is rejected before the provider call",
+    customerResult: "The customer is charged once; request B returns an error",
+  },
+  "idempotent-api": {
+    requestB: "Request B receives the response stored by request A",
+    customerResult: "The customer is charged once; both requests return success",
+  },
+};
 
 const laneStyles: Record<TraceLane, string> = {
   lab: "border-slate-500/35 bg-slate-500/10",
@@ -142,7 +152,7 @@ function ExecutionDiagram({ result }: { result: LabRunResult }) {
       ? "UNIQUE(payment_intent_id)"
       : "KEY(pay-1042)";
   const caption = unprotected
-    ? "A and B both cross the provider boundary, so the ledger receives two charges."
+    ? "A and B both reach the provider, so the customer is charged twice."
     : databaseGuard
       ? "PostgreSQL gives A ownership. B conflicts before it can call the provider."
       : "A owns the key and calls the provider. B waits, then receives A's stored response.";
@@ -340,7 +350,6 @@ function SectionHeading({
 
 export function App() {
   const [mode, setMode] = useState<PaymentMode>("unprotected");
-  const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [result, setResult] = useState<LabRunResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -393,8 +402,6 @@ export function App() {
   };
 
   const selectedLesson = lessonModes[mode];
-  const predictionWasCorrect =
-    prediction === "two" && result?.mode === "unprotected";
 
   return (
     <div className="app">
@@ -430,7 +437,8 @@ export function App() {
             <aside className="invariant">
               <span>Business invariant</span>
               <p>
-                A payment intent must create no more than one provider charge.
+                The customer must be charged no more than once for the same
+                payment intent.
               </p>
               <small>
                 This is the entire problem. Everything below exists to enforce
@@ -442,9 +450,9 @@ export function App() {
 
         <section className="experiment-section" id="experiment">
           <div className="page-shell lesson-section">
-            <SectionHeading number="01" title="Run one race three ways">
-              The requests never change. Choose the ownership rule, run the
-              race, and watch where the duplicate is stopped or replayed.
+            <SectionHeading number="01" title="The same payment arrives twice">
+              Choose what the API does with request B. Then run the scenario and
+              watch which requests reach the payment provider.
             </SectionHeading>
 
             <div className="scenario-layout">
@@ -464,28 +472,6 @@ export function App() {
                 </div>
                 <p>Same business intent. Two concurrent HTTP requests.</p>
               </div>
-
-              <fieldset className="prediction">
-                <legend>
-                  With no duplicate protection, how many provider charges are
-                  created?
-                </legend>
-                <div>
-                  {predictions.map((item) => (
-                    <button
-                      aria-pressed={prediction === item.value}
-                      data-selected={prediction === item.value}
-                      key={item.value}
-                      onClick={() => setPrediction(item.value)}
-                      type="button"
-                    >
-                      <span>{prediction === item.value ? "●" : "○"}</span>
-                      <strong>{item.label}</strong>
-                      <small>{item.note}</small>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
             </div>
 
             <div
@@ -494,12 +480,13 @@ export function App() {
               aria-label="Duplicate protection mode"
             >
               <div className="mode-head" aria-hidden="true">
-                <span>MODE</span>
-                <span>MECHANISM</span>
-                <span>GUARANTEE</span>
+                <span>SCENARIO</span>
+                <span>WHAT REQUEST B DOES</span>
+                <span>CUSTOMER RESULT</span>
               </div>
               {modes.map((item, index) => {
                 const lesson = lessonModes[item];
+                const row = modeRows[item];
                 return (
                   <button
                     aria-pressed={item === mode}
@@ -509,8 +496,8 @@ export function App() {
                     type="button"
                   >
                     <span>0{index + 1} / {lesson.title}</span>
-                    <span>{lesson.mechanism}</span>
-                    <span>{lesson.guarantee}</span>
+                    <span>{row.requestB}</span>
+                    <span>{row.customerResult}</span>
                   </button>
                 );
               })}
@@ -556,15 +543,9 @@ export function App() {
 
                   <div className="result-stats">
                     <div><span>Provider calls</span><strong>{result.summary.providerAttempts}</strong></div>
-                    <div><span>Charges</span><strong>{result.summary.providerCharges}</strong></div>
+                    <div><span>Customer charges</span><strong>{result.summary.providerCharges}</strong></div>
                     <div><span>Replayed responses</span><strong>{result.summary.replayedResponses}</strong></div>
-                    <p data-correct={predictionWasCorrect}>
-                      {result.mode === "unprotected" && prediction
-                        ? predictionWasCorrect
-                          ? "Your prediction matched the live trace."
-                          : "The live trace shows why the first prediction was wrong."
-                        : selectedLesson.guarantee}
-                    </p>
+                    <p>{modeRows[result.mode].customerResult}</p>
                   </div>
                 </article>
               ) : (
