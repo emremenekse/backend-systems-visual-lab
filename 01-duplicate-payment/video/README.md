@@ -15,3 +15,9 @@ npm run render
 ```
 
 Set `MODE=unprotected` or `MODE=database-constraint` when capturing another mode.
+
+Publish the interview-prep video and poster directly into the visual lesson:
+
+```bash
+npm run publish:visual
+```

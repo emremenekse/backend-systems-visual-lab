@@ -8,6 +8,9 @@
     "capture": "node scripts/capture-trace.mjs",
     "render": "remotion render src/index.ts DuplicatePayment out/duplicate-payment.mp4 --props=run.json",
     "render:sample": "remotion render src/index.ts DuplicatePayment out/duplicate-payment-sample.mp4 --props=src/sample-run.json",
+    "render:visual": "remotion render src/index.ts DuplicatePayment ../visual/public/duplicate-payment-explainer.mp4 --props=src/sample-run.json",
+    "poster:visual": "remotion still src/index.ts DuplicatePayment ../visual/public/duplicate-payment-explainer.png --frame=262 --props=src/sample-run.json",
+    "publish:visual": "npm run render:visual && npm run poster:visual",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -9,8 +9,11 @@ where duplicate protection must live and what each strategy actually guarantees.
 docker compose -f infra/compose.yaml up --build
 ```
 
-Open [http://localhost:4173](http://localhost:4173), choose a mode, and run the
-two requests. Stop the lab with:
+Open [http://localhost:4173](http://localhost:4173). The lesson asks for a
+prediction, runs two real concurrent requests, explains the result in four
+steps, and finishes with interview questions and a Remotion video.
+
+Stop the lab with:
 
 ```bash
 docker compose -f infra/compose.yaml down
@@ -49,7 +52,7 @@ dotnet test backend/DuplicatePayment.slnx
 npm --prefix visual test
 npm --prefix visual run build
 npm --prefix video run typecheck
-npm --prefix video run render:sample
+npm --prefix video run publish:visual
 ```
 
 To render a fresh live run, keep Docker Compose running and execute:
