@@ -7,5 +7,9 @@ dist/
 build/
 coverage/
 out/
+run.json
 .turbo/
 *.log
+*.tsbuildinfo
+**/bin/
+**/obj/

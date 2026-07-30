@@ -1,27 +1,60 @@
-# 01 — Duplicate payment
+# 01 — Duplicate Payment
 
-## Question
+Two concurrent requests attempt to charge the same payment intent. The lab shows
+where duplicate protection must live and what each strategy actually guarantees.
 
-What happens when the same payment request arrives twice?
+## Run it
 
-## Versions
-
-1. No duplicate protection
-2. Database unique constraint
-3. Idempotency key and response replay
-
-## Project
-
-```text
-backend/   API and payment behavior
-visual/    interactive event flow
-video/     Remotion explanation
-infra/     database and fake provider
-tests/     concurrency scenarios
+```bash
+docker compose -f infra/compose.yaml up --build
 ```
 
-The backend technology will be selected for this lab. The visual and video must use events produced by the running backend.
+Open [http://localhost:4173](http://localhost:4173), choose a mode, and run the
+two requests. Stop the lab with:
 
-## Status
+```bash
+docker compose -f infra/compose.yaml down
+```
 
-Planning.
+## Modes
+
+| Mode | Result |
+| --- | --- |
+| Unprotected | Two provider charges; invariant fails |
+| Database constraint | One charge; the duplicate is rejected |
+| Idempotent API | One charge; the stored response is replayed |
+
+## Stack
+
+- .NET 10 Minimal API
+- PostgreSQL 17 and explicit SQL
+- xUnit + Testcontainers concurrency tests
+- React + TypeScript event timeline
+- Remotion video generated from the same trace
+- Docker Compose
+
+## Project map
+
+```text
+backend/   API, fake provider, and integration tests
+visual/    live interactive trace
+video/     trace-driven Remotion composition
+infra/     Docker Compose
+```
+
+## Verify
+
+```bash
+dotnet test backend/DuplicatePayment.slnx
+npm --prefix visual test
+npm --prefix visual run build
+npm --prefix video run typecheck
+npm --prefix video run render:sample
+```
+
+To render a fresh live run, keep Docker Compose running and execute:
+
+```bash
+npm --prefix video run capture
+npm --prefix video run render
+```

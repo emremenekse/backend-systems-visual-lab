@@ -1,0 +1,125 @@
+{
+  "runId": "786e8a26-0780-477a-991d-17ca2e8efbd2",
+  "mode": "idempotent-api",
+  "paymentIntentId": "intent-786e8a260780477a991d17ca2e8efbd2",
+  "results": [
+    {
+      "requestId": "request-a",
+      "outcome": "charged",
+      "replayed": false,
+      "paymentId": "73f7f6f8-3427-48ec-a9de-c3fca19115d8",
+      "providerChargeId": "ch_a915534b837749e5a3ef0123c34a8911"
+    },
+    {
+      "requestId": "request-b",
+      "outcome": "response-replayed",
+      "replayed": true,
+      "paymentId": "73f7f6f8-3427-48ec-a9de-c3fca19115d8",
+      "providerChargeId": "ch_a915534b837749e5a3ef0123c34a8911"
+    }
+  ],
+  "provider": {
+    "paymentIntentId": "intent-786e8a260780477a991d17ca2e8efbd2",
+    "attempts": 1,
+    "charges": 1,
+    "replays": 0
+  },
+  "summary": {
+    "providerAttempts": 1,
+    "providerCharges": 1,
+    "replayedResponses": 1,
+    "verdict": "One request executed; the other received the stored response."
+  },
+  "trace": [
+    {
+      "sequence": 1,
+      "offsetMs": 0,
+      "lane": "lab",
+      "kind": "start",
+      "label": "Scenario started",
+      "detail": "Two requests will cross the same critical section.",
+      "requestId": "lab"
+    },
+    {
+      "sequence": 2,
+      "offsetMs": 1.2,
+      "lane": "request-a",
+      "kind": "request",
+      "label": "Request received",
+      "detail": "Same payment intent and idempotency key.",
+      "requestId": "request-a"
+    },
+    {
+      "sequence": 3,
+      "offsetMs": 1.4,
+      "lane": "request-b",
+      "kind": "request",
+      "label": "Request received",
+      "detail": "Same payment intent and idempotency key.",
+      "requestId": "request-b"
+    },
+    {
+      "sequence": 4,
+      "offsetMs": 4.1,
+      "lane": "database",
+      "kind": "write",
+      "label": "Idempotency key claimed",
+      "detail": "Request A owns execution and response persistence.",
+      "requestId": "request-a"
+    },
+    {
+      "sequence": 5,
+      "offsetMs": 4.4,
+      "lane": "database",
+      "kind": "wait",
+      "label": "Existing key found",
+      "detail": "Request B waits for the stored response.",
+      "requestId": "request-b"
+    },
+    {
+      "sequence": 6,
+      "offsetMs": 7.2,
+      "lane": "provider",
+      "kind": "call",
+      "label": "Calling payment provider",
+      "detail": "The idempotency key crosses the service boundary.",
+      "requestId": "request-a"
+    },
+    {
+      "sequence": 7,
+      "offsetMs": 188.3,
+      "lane": "provider",
+      "kind": "effect",
+      "label": "Provider created charge",
+      "detail": "ch_a915534b837749e5a3ef0123c34a8911",
+      "requestId": "request-a"
+    },
+    {
+      "sequence": 8,
+      "offsetMs": 192.5,
+      "lane": "database",
+      "kind": "write",
+      "label": "Response persisted",
+      "detail": "Retries can replay the same successful response.",
+      "requestId": "request-a"
+    },
+    {
+      "sequence": 9,
+      "offsetMs": 203.8,
+      "lane": "request-b",
+      "kind": "replay",
+      "label": "Response replayed",
+      "detail": "No provider call is made by the second request.",
+      "requestId": "request-b"
+    },
+    {
+      "sequence": 10,
+      "offsetMs": 205.1,
+      "lane": "lab",
+      "kind": "finish",
+      "label": "Scenario finished",
+      "detail": "One request executed; the other received the stored response.",
+      "requestId": "lab"
+    }
+  ]
+}

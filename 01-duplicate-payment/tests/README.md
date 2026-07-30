@@ -1,3 +1,9 @@
 # Tests
 
-Integration tests will send concurrent requests and assert that one payment intent creates at most one charge.
+The integration tests start a real PostgreSQL container, send two requests
+through an explicit concurrency barrier, and verify provider charge counts for
+all three modes.
+
+```bash
+dotnet test ../backend/DuplicatePayment.slnx
+```

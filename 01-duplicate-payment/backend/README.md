@@ -1,9 +1,14 @@
 # Backend
 
-This project will implement the payment API in three modes:
+.NET 10 solution containing:
 
-- unprotected;
-- database constraint;
-- idempotent API.
+- `DuplicatePayment.Api` — payment API and lab runner;
+- `DuplicatePayment.Provider` — fake external payment provider;
+- `DuplicatePayment.Api.Tests` — concurrent integration tests with PostgreSQL Testcontainers.
 
-The runtime is not selected yet.
+Build and test:
+
+```bash
+dotnet build DuplicatePayment.slnx
+dotnet test DuplicatePayment.slnx
+```

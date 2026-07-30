@@ -20,6 +20,6 @@ The backend stack may change between labs. One can use TypeScript, another .NET,
 
 | Lab | Topic | Status |
 | --- | --- | --- |
-| [01](01-duplicate-payment/README.md) | Duplicate payment and idempotency | Planning |
+| [01](01-duplicate-payment/README.md) | Duplicate payment and idempotency · .NET | Runnable |
 
 [See the roadmap](ROADMAP.md)

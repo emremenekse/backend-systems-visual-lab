@@ -1,5 +1,10 @@
 # Visual
 
-An interactive view of the two request lanes, database operations, and payment attempts.
+Vite + React interface for running the live lab and reading its event timeline.
 
-It will read the trace produced by this lab's backend.
+```bash
+npm install
+npm run dev
+```
+
+The development server proxies `/api` to `http://localhost:8080`.
