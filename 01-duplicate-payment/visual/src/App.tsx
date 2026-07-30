@@ -349,7 +349,13 @@ function SectionHeading({
   );
 }
 
-function formatVideoTime(seconds: number) {
+const recapDurationSeconds = 15;
+
+function progressBetween(value: number, start: number, end: number) {
+  return Math.min(1, Math.max(0, (value - start) / (end - start)));
+}
+
+function formatRecapTime(seconds: number) {
   if (!Number.isFinite(seconds)) {
     return "0:00";
   }
@@ -360,90 +366,286 @@ function formatVideoTime(seconds: number) {
   return `${minutes}:${remainder}`;
 }
 
-function RecapVideo() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasEnded, setHasEnded] = useState(false);
-  const [playbackError, setPlaybackError] = useState<string | null>(null);
+function RecapToken({
+  color,
+  label,
+  testId,
+  x,
+  y,
+}: {
+  color: "blue" | "cyan";
+  label: string;
+  testId: string;
+  x: number;
+  y: number;
+}) {
+  return (
+    <g
+      className={`recap-token recap-token-${color}`}
+      data-testid={testId}
+      transform={`translate(${x} ${y})`}
+    >
+      <circle r="17" />
+      <text dominantBaseline="middle" textAnchor="middle" y="1">
+        {label}
+      </text>
+    </g>
+  );
+}
 
-  const togglePlayback = () => {
-    const video = videoRef.current;
-    if (!video) {
+function RecapAnimation() {
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const animationFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isPlaying) {
       return;
     }
 
-    setPlaybackError(null);
+    const startedAt = performance.now() - currentTime * 1000;
 
-    if (video.paused || video.ended) {
-      if (video.ended || hasEnded) {
-        video.currentTime = 0;
-        setCurrentTime(0);
-        setHasEnded(false);
+    const tick = (now: number) => {
+      const nextTime = Math.min(
+        recapDurationSeconds,
+        (now - startedAt) / 1000,
+      );
+      setCurrentTime(nextTime);
+
+      if (nextTime >= recapDurationSeconds) {
+        setIsPlaying(false);
+        return;
       }
 
-      void video.play().catch(() => {
-        setIsPlaying(false);
-        setPlaybackError(
-          "Playback was blocked by the browser. Use Download MP4 below.",
-        );
-      });
+      animationFrameRef.current = window.requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(tick);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying]);
+
+  const hasEnded = currentTime >= recapDurationSeconds;
+  const isFailure = currentTime < 6;
+  const sceneTime = isFailure ? currentTime : currentTime - 6;
+  const primaryLabel = hasEnded
+    ? "Replay animation"
+    : isPlaying
+      ? "Pause animation"
+      : "Play animation";
+
+  const failureA = 120 + 720 * progressBetween(sceneTime, 0.4, 4);
+  const failureB = 120 + 720 * progressBetween(sceneTime, 1.1, 4.7);
+  const claimAProgress = progressBetween(sceneTime, 0.4, 2);
+  const claimBProgress = progressBetween(sceneTime, 0.9, 2.5);
+  const ownerProgress = progressBetween(sceneTime, 2.3, 6);
+  const fixedA =
+    sceneTime < 2 ? 120 + 310 * claimAProgress : 430 + 410 * ownerProgress;
+  const fixedB = 120 + 310 * claimBProgress;
+  const replayProgress = progressBetween(sceneTime, 6.1, 8.1);
+  const replayX = 430 - 310 * replayProgress;
+
+  const currentStatement = isFailure
+    ? currentTime < 1.1
+      ? "Two HTTP requests carry the same payment intent."
+      : currentTime < 4.3
+        ? "Without a shared claim, both requests reach the provider."
+        : "One business operation created two charges."
+    : sceneTime < 2.5
+      ? "Both requests attempt the same unique-key insert."
+      : sceneTime < 6.1
+        ? "A owns the operation. B waits. Only A calls the provider."
+        : sceneTime < 8.1
+          ? "A stores the result; B receives the same response."
+          : "Unique claim → one charge → same response.";
+
+  const togglePlayback = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
       return;
     }
 
-    video.pause();
+    if (hasEnded) {
+      setCurrentTime(0);
+    }
+    setIsPlaying(true);
   };
 
-  const primaryLabel = hasEnded
-    ? "Replay recap"
-    : isPlaying
-      ? "Pause recap"
-      : "Play recap";
-
   return (
-    <figure className="video-figure">
-      <div className="video-player" data-ended={hasEnded}>
-        <video
-          onDurationChange={(event) => setDuration(event.currentTarget.duration)}
-          onEnded={() => {
-            setHasEnded(true);
-            setIsPlaying(false);
-          }}
-          onPause={() => setIsPlaying(false)}
-          onPlay={() => {
-            setHasEnded(false);
-            setIsPlaying(true);
-          }}
-          onTimeUpdate={(event) =>
-            setCurrentTime(event.currentTarget.currentTime)
-          }
-          playsInline
-          poster="/duplicate-payment-explainer.png"
-          preload="metadata"
-          ref={videoRef}
+    <figure className="recap-figure">
+      <div className="recap-animation">
+        <div className="recap-animation-head">
+          <span>{isFailure ? "01 / FAILURE" : "02 / FIX"}</span>
+          <span>
+            {isFailure
+              ? "NO SHARED OPERATION CLAIM"
+              : "UNIQUE CLAIM + STORED RESPONSE"}
+          </span>
+        </div>
+
+        <svg
+          aria-labelledby="recap-title recap-description"
+          className="recap-svg"
+          role="img"
+          viewBox="0 0 960 500"
         >
-          <source src="/duplicate-payment-explainer.mp4" type="video/mp4" />
-          Your browser does not support MP4 video.
-        </video>
+          <title id="recap-title">Duplicate payment execution recap</title>
+          <desc id="recap-description">{currentStatement}</desc>
+          <defs>
+            <marker
+              id="recap-arrow-danger"
+              markerHeight="7"
+              markerWidth="7"
+              orient="auto"
+              refX="6"
+              refY="3.5"
+            >
+              <path className="recap-arrow-danger" d="M0,0 L0,7 L7,3.5 z" />
+            </marker>
+            <marker
+              id="recap-arrow-success"
+              markerHeight="7"
+              markerWidth="7"
+              orient="auto"
+              refX="6"
+              refY="3.5"
+            >
+              <path className="recap-arrow-success" d="M0,0 L0,7 L7,3.5 z" />
+            </marker>
+          </defs>
 
-        {!isPlaying ? (
-          <button
-            aria-label={primaryLabel}
-            className="video-stage-button"
-            onClick={togglePlayback}
-            type="button"
-          >
-            {hasEnded ? (
-              <RefreshCw aria-hidden="true" size={20} />
-            ) : (
-              <Play aria-hidden="true" fill="currentColor" size={19} />
-            )}
-            <span>{primaryLabel}</span>
-          </button>
-        ) : null}
+          <g className="recap-phase-labels">
+            <text x="120" y="50">CALLERS</text>
+            <text x="430" y="50">{isFailure ? "PAYMENT API" : "UNIQUE CLAIM"}</text>
+            <text x="680" y="50">PROVIDER</text>
+            <text x="840" y="50">LEDGER</text>
+          </g>
+          <g className="recap-rules">
+            <line x1="350" x2="350" y1="70" y2="400" />
+            <line x1="600" x2="600" y1="70" y2="400" />
+            <line x1="780" x2="780" y1="70" y2="400" />
+          </g>
+          <g className="recap-lane-labels">
+            <text x="32" y="195">REQUEST A</text>
+            <text x="32" y="335">REQUEST B</text>
+          </g>
 
-        <div className="video-controls">
+          {isFailure ? (
+            <g data-scene="failure">
+              <path
+                className="recap-danger-path"
+                d="M120 190 H860"
+                markerEnd="url(#recap-arrow-danger)"
+              />
+              <path
+                className="recap-danger-path"
+                d="M120 330 H860"
+                markerEnd="url(#recap-arrow-danger)"
+              />
+              <line
+                className="recap-api-gate"
+                x1="430"
+                x2="430"
+                y1="125"
+                y2="375"
+              />
+              <circle className="recap-danger-node" cx="680" cy="190" r="42" />
+              <circle className="recap-danger-node" cx="680" cy="330" r="42" />
+              <text className="recap-node-label recap-danger-text" x="680" y="196">
+                CHARGE
+              </text>
+              <text className="recap-node-label recap-danger-text" x="680" y="336">
+                CHARGE
+              </text>
+              <g opacity={progressBetween(sceneTime, 3.3, 3.7)}>
+                <rect className="recap-danger-ledger" height="48" width="96" x="812" y="166" />
+                <text className="recap-ledger-text recap-danger-text" x="860" y="196">−$499</text>
+              </g>
+              <g opacity={progressBetween(sceneTime, 4, 4.4)}>
+                <rect className="recap-danger-ledger" height="48" width="96" x="812" y="306" />
+                <text className="recap-ledger-text recap-danger-text" x="860" y="336">−$499</text>
+              </g>
+              <RecapToken color="blue" label="A" testId="recap-token-a" x={failureA} y={190} />
+              <RecapToken color="cyan" label="B" testId="recap-token-b" x={failureB} y={330} />
+              <g opacity={progressBetween(sceneTime, 4.5, 5)}>
+                <line className="recap-verdict-line recap-danger-path" x1="120" x2="860" y1="425" y2="425" />
+                <text className="recap-verdict recap-danger-text" x="120" y="462">
+                  1 BUSINESS OPERATION → 2 CHARGES
+                </text>
+              </g>
+            </g>
+          ) : (
+            <g data-scene="fix">
+              <path
+                className="recap-success-path"
+                d="M120 190 H860"
+                markerEnd="url(#recap-arrow-success)"
+              />
+              <path className="recap-muted-path" d="M120 330 H430" />
+              <rect className="recap-claim-node" height="250" width="170" x="390" y="120" />
+              <text className="recap-claim-title" x="475" y="160">UNIQUE KEY</text>
+              <text className="recap-claim-owner" x="475" y="215">
+                A INSERTS
+              </text>
+              <text className="recap-claim-waiter" x="475" y="257">
+                B CONFLICTS
+              </text>
+              <text className="recap-claim-state" x="475" y="305">
+                {sceneTime < 6.1 ? "processing" : "response stored"}
+              </text>
+              <circle className="recap-success-node" cx="680" cy="190" r="46" />
+              <text className="recap-node-label recap-success-text" x="680" y="185">
+                ONE
+              </text>
+              <text className="recap-node-detail recap-success-text" x="680" y="208">
+                CHARGE
+              </text>
+              <g opacity={progressBetween(sceneTime, 5, 5.5)}>
+                <rect className="recap-success-ledger" height="48" width="96" x="812" y="166" />
+                <text className="recap-ledger-text recap-success-text" x="860" y="196">−$499</text>
+              </g>
+              <RecapToken color="blue" label="A" testId="recap-token-a" x={fixedA} y={190} />
+              <RecapToken color="cyan" label="B" testId="recap-token-b" x={fixedB} y={330} />
+              <g opacity={progressBetween(sceneTime, 6.1, 6.5)}>
+                <path
+                  className="recap-replay-path"
+                  d="M430 360 C430 415 190 415 120 360"
+                  markerEnd="url(#recap-arrow-success)"
+                />
+                <rect
+                  className="recap-response-token"
+                  height="18"
+                  width="18"
+                  x={replayX - 9}
+                  y="389"
+                />
+                <text className="recap-replay-label" x="275" y="442">
+                  STORED 200 RESPONSE → REQUEST B
+                </text>
+              </g>
+              <g opacity={progressBetween(sceneTime, 8, 8.5)}>
+                <line className="recap-verdict-line recap-success-path" x1="120" x2="860" y1="462" y2="462" />
+                <text className="recap-verdict recap-success-text" x="120" y="490">
+                  UNIQUE CLAIM → 1 CHARGE → SAME RESPONSE
+                </text>
+              </g>
+            </g>
+          )}
+        </svg>
+
+        <p
+          aria-live="polite"
+          className="recap-statement"
+          data-tone={isFailure ? "danger" : "success"}
+        >
+          {currentStatement}
+        </p>
+
+        <div className="recap-controls">
           <button
             aria-label={primaryLabel}
             onClick={togglePlayback}
@@ -459,40 +661,29 @@ function RecapVideo() {
             <span>{primaryLabel}</span>
           </button>
           <input
-            aria-label="Video position"
-            max={duration || 0}
+            aria-label="Animation position"
+            max={recapDurationSeconds}
             min="0"
             onChange={(event) => {
-              const video = videoRef.current;
-              if (!video) {
-                return;
-              }
-
               const nextTime = Number(event.currentTarget.value);
-              video.currentTime = nextTime;
+              setIsPlaying(false);
               setCurrentTime(nextTime);
-              setHasEnded(duration > 0 && nextTime >= duration);
             }}
             step="0.01"
             type="range"
-            value={Math.min(currentTime, duration || 0)}
+            value={currentTime}
           />
-          <output aria-label="Video time">
-            {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+          <output aria-label="Animation time">
+            {formatRecapTime(currentTime)} /{" "}
+            {formatRecapTime(recapDurationSeconds)}
           </output>
         </div>
       </div>
 
-      {playbackError ? (
-        <p className="video-error" role="alert">
-          {playbackError}
-        </p>
-      ) : null}
-
       <figcaption>
         <p>
-          Watch the unique insert select one owner, then the stored response
-          return to request B.
+          First see the failure. Then watch one insert select the owner and
+          replay the stored response to request B.
         </p>
         <a href="/duplicate-payment-explainer.mp4" download>
           Download MP4
@@ -760,16 +951,17 @@ export function App() {
             <blockquote>{sixtySecondAnswer}</blockquote>
           </article>
 
-          <details className="recap-video" id="video">
-            <summary>
-              <span>15-second visual recap</span>
-              <span>
-                optional
-                <ChevronDown aria-hidden="true" size={15} />
-              </span>
-            </summary>
-            <RecapVideo />
-          </details>
+          <section
+            aria-labelledby="recap-heading"
+            className="recap-video"
+            id="video"
+          >
+            <header className="recap-heading">
+              <span id="recap-heading">15-second visual recap</span>
+              <span>browser animation · no video player</span>
+            </header>
+            <RecapAnimation />
+          </section>
         </section>
 
         <section className="page-shell trace-section">
