@@ -9,18 +9,25 @@ describe("lesson content", () => {
     );
   });
 
-  it("describes ownership and replay for an idempotent API", () => {
+  it("shows that the full workflow builds on a unique constraint", () => {
     const lesson = lessonModes["idempotent-api"];
 
-    expect(lesson.mechanism).toContain("Key claim");
-    expect(lesson.explanation).toContain("stored response");
+    expect(lesson.title).toBe("Full idempotency workflow");
+    expect(lesson.mechanism).toContain("Unique key claim");
+    expect(lesson.explanation).toContain("same primitive");
+    expect(lesson.explanation).toContain("unique constraint");
+    expect(lesson.explanation).toContain("replay");
     expect(lesson.limitation).toContain("provider timeouts");
   });
 
-  it("keeps the database boundary and interview guarantee explicit", () => {
-    expect(lessonModes["database-constraint"].limitation).toContain(
-      "idempotent API",
+  it("keeps the constraint-only boundary explicit", () => {
+    expect(lessonModes["database-constraint"].title).toBe(
+      "Unique constraint only",
     );
+    expect(lessonModes["database-constraint"].limitation).toContain(
+      "does not store and replay",
+    );
+    expect(sixtySecondAnswer).toContain("database unique constraint");
     expect(sixtySecondAnswer).toContain("effectively-once");
     expect(sixtySecondAnswer).toContain("at-least-once");
   });

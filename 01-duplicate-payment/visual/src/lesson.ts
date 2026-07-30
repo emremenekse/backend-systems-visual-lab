@@ -28,15 +28,15 @@ var charge = await provider.ChargeAsync(payment);
 await InsertPaymentAsync(charge);`,
   },
   "database-constraint": {
-    title: "Database constraint",
-    mechanism: "A unique index selects one owner",
-    guarantee: "At most one charge for one payment intent",
+    title: "Unique constraint only",
+    mechanism: "A unique insert selects one winner",
+    guarantee: "One charge; duplicate requests return an error",
     explanation:
-      "Both requests try to claim the same payment intent. PostgreSQL allows one insert and rejects the other.",
+      "Both requests insert the same payment intent. PostgreSQL accepts one row and rejects the duplicate through a unique constraint.",
     limitation:
-      "A constraint does not form a complete idempotent API contract: it cannot replay the original response, and it still needs a recovery plan for pending rows and process crashes.",
+      "The constraint prevents a second charge, but it does not store and replay the first response. Pending rows and process crashes still need recovery rules.",
     interviewLine:
-      "A unique constraint is the last line of defence, not a complete idempotency contract.",
+      "A unique constraint chooses one winner, but it is not the complete idempotency contract.",
     codeLanguage: "sql",
     code: `CREATE UNIQUE INDEX ux_payment_intent
 ON payments (payment_intent_id);
@@ -46,17 +46,20 @@ VALUES (...)
 ON CONFLICT DO NOTHING;`,
   },
   "idempotent-api": {
-    title: "Idempotent API",
-    mechanism: "Key claim, request hash, response replay",
-    guarantee: "One execution; duplicate callers see the same result",
+    title: "Full idempotency workflow",
+    mechanism: "Unique key claim, state, and response replay",
+    guarantee: "One charge; duplicate requests return the same response",
     explanation:
-      "The first request owns the key and stores its result. A duplicate with the same key and payload receives that stored response without calling the provider again.",
+      "This starts with the same primitive: an atomic insert protected by a unique constraint. The winner performs the charge and stores its response; duplicates wait for and replay that response.",
     limitation:
       "You still need rules for key expiry, payload mismatch, owner crashes, provider timeouts, and reconciliation.",
     interviewLine:
-      "The same key and payload should produce the same side effect and the same response.",
+      "The unique constraint chooses one owner; stored state and response replay complete the idempotency contract.",
     codeLanguage: "csharp",
-    code: `var ownsKey = await TryClaimAsync(key, requestHash);
+    code: `// idempotency_key is a PRIMARY KEY.
+var ownsKey = await TryInsertProcessingRowAsync(
+    key,
+    requestHash);
 
 if (!ownsKey)
     return await ReplayStoredResponseAsync(key);
@@ -71,4 +74,4 @@ return charge;`,
 };
 
 export const sixtySecondAnswer =
-  "A duplicate payment is one business operation executing more than once. I identify that operation with a payment intent and idempotency key, then atomically select one owner in durable storage. Only the owner calls the provider; duplicates receive the stored response. I propagate the same key downstream and use processing states plus reconciliation for crashes and ambiguous timeouts. That gives an effectively-once side effect under at-least-once delivery—not a blanket exactly-once guarantee.";
+  "A duplicate payment is one business operation executing more than once. I identify it with an idempotency key and use a database unique constraint to atomically select one owner. The owner calls the provider and stores the result; duplicates wait for and replay that response. I propagate the same key downstream and use processing states plus reconciliation for crashes and ambiguous timeouts. That gives an effectively-once side effect under at-least-once delivery—not a blanket exactly-once guarantee.";

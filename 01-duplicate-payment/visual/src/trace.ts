@@ -26,14 +26,14 @@ export const modeCopy: Record<
     risk: "Both requests can create an external charge.",
   },
   "database-constraint": {
-    title: "Database constraint",
-    mechanism: "Unique index",
-    risk: "One request owns the payment intent; the other is rejected.",
+    title: "Unique constraint only",
+    mechanism: "Unique insert",
+    risk: "One insert succeeds; the duplicate request is rejected.",
   },
   "idempotent-api": {
-    title: "Idempotent API",
-    mechanism: "Key + replay",
-    risk: "One request executes; duplicates receive the stored response.",
+    title: "Full idempotency workflow",
+    mechanism: "Unique key + stored response",
+    risk: "One insert wins; duplicates replay the stored response.",
   },
 };
 

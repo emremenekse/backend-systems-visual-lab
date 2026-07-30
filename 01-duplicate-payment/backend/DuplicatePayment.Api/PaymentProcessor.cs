@@ -211,8 +211,8 @@ public sealed class PaymentProcessor(
             requestId,
             "database",
             "guard",
-            "Claiming idempotency key",
-            $"Key {ShortKey(idempotencyKey)} identifies this business request.");
+            "Inserting unique idempotency key",
+            $"A primary-key insert for {ShortKey(idempotencyKey)} atomically selects one owner.");
 
         if (gate is not null)
         {
@@ -232,8 +232,8 @@ public sealed class PaymentProcessor(
                 requestId,
                 "database",
                 "wait",
-                "Existing key found",
-                "Waiting for the owner to persist its response.");
+                "Unique-key conflict",
+                "The duplicate waits for the winning insert to persist its response.");
 
             var stored = await WaitForIdempotencyResponseAsync(
                 idempotencyKey,
@@ -261,7 +261,7 @@ public sealed class PaymentProcessor(
             requestId,
             "database",
             "write",
-            "Idempotency key claimed",
+            "Unique-key insert succeeded",
             "This request owns execution and response persistence.");
 
         var paymentId = Guid.NewGuid();

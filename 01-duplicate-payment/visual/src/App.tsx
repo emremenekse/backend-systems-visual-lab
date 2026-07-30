@@ -33,11 +33,11 @@ const modeRows: Record<
     customerResult: "The customer can be charged twice",
   },
   "database-constraint": {
-    requestB: "Request B is rejected before the provider call",
+    requestB: "Its INSERT hits the payment intent unique constraint",
     customerResult: "The customer is charged once; request B returns an error",
   },
   "idempotent-api": {
-    requestB: "Request B receives the response stored by request A",
+    requestB: "Its idempotency-key INSERT conflicts with A's processing row",
     customerResult: "The customer is charged once; both requests return success",
   },
 };
@@ -150,12 +150,12 @@ function ExecutionDiagram({ result }: { result: LabRunResult }) {
     ? "NO OWNER"
     : databaseGuard
       ? "UNIQUE(payment_intent_id)"
-      : "KEY(pay-1042)";
+      : "PK(idempotency_key)";
   const caption = unprotected
     ? "A and B both reach the provider, so the customer is charged twice."
     : databaseGuard
-      ? "PostgreSQL gives A ownership. B conflicts before it can call the provider."
-      : "A owns the key and calls the provider. B waits, then receives A's stored response.";
+      ? "A's insert satisfies the unique constraint. B's insert conflicts, so only A calls the provider."
+      : "An atomic unique insert selects A. Stored processing state and response data let B wait and replay the result.";
 
   const pathA = "M 92 116 H 286 H 496 H 640";
   const pathB = unprotected
@@ -189,7 +189,7 @@ function ExecutionDiagram({ result }: { result: LabRunResult }) {
 
         <g className="phase-labels">
           <text x="92" y="24">SAME OPERATION</text>
-          <text x="286" y="24">OWNERSHIP</text>
+          <text x="286" y="24">ATOMIC CLAIM</text>
           <text x="496" y="24">SIDE EFFECT</text>
           <text x="640" y="24">LEDGER</text>
         </g>
@@ -236,8 +236,8 @@ function ExecutionDiagram({ result }: { result: LabRunResult }) {
             {unprotected
               ? "A executes · B executes"
               : databaseGuard
-                ? "A = owner · B = conflict"
-                : "A = owner · B = waits"}
+                ? "A insert wins · B conflicts"
+                : "A insert wins · B waits"}
           </text>
         </g>
 
@@ -560,8 +560,8 @@ export function App() {
 
         <section className="page-shell lesson-section" id="explanation">
           <SectionHeading number="02" title="Explain the design">
-            A complete answer names the operation identity, the execution owner,
-            the stored result, and the failure boundary.
+            A complete answer names the operation identity, the atomic unique
+            claim, the stored result, and the failure boundary.
           </SectionHeading>
 
           <dl className="mechanism-notes">
@@ -625,7 +625,8 @@ export function App() {
               </video>
               <figcaption>
                 <p>
-                  Watch for the operation identity, the owner, and the replay.
+                  Watch the unique insert select one owner, then the stored
+                  response return to request B.
                 </p>
                 <a href="/duplicate-payment-explainer.mp4" download>
                   Download MP4

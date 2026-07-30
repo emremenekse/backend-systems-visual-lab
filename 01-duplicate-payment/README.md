@@ -10,10 +10,11 @@ docker compose -f infra/compose.yaml up --build
 ```
 
 Open [http://localhost:4173](http://localhost:4173). One experiment keeps the
-payment and concurrent requests fixed while you switch the ownership rule. Run
-any of the three modes and compare what request B does, how many times the
-customer is charged, and whether a stored response is replayed. The Remotion
-recap and raw trace are optional.
+payment and concurrent requests fixed while you change the duplicate-handling
+contract. Run all three modes to see how a database unique constraint first
+blocks a duplicate, then becomes the atomic claim underneath a full idempotency
+workflow with stored-response replay. The Remotion recap and raw trace are
+optional.
 
 Stop the lab with:
 
@@ -26,8 +27,8 @@ docker compose -f infra/compose.yaml down
 | Mode | Result |
 | --- | --- |
 | Unprotected | The customer can be charged twice |
-| Database constraint | The customer is charged once; request B returns an error |
-| Idempotent API | The customer is charged once; both requests return the same response |
+| Unique constraint only | The customer is charged once; request B returns an error |
+| Full idempotency workflow | The unique-constraint primitive is extended with state and response replay |
 
 ## Stack
 

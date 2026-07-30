@@ -51,9 +51,9 @@ public sealed class LabRunner(
             PaymentMode.Unprotected =>
                 "Both requests created a charge. The invariant failed.",
             PaymentMode.DatabaseConstraint =>
-                "The unique index allowed one owner and blocked the duplicate.",
+                "The unique constraint accepted one insert and rejected the duplicate.",
             PaymentMode.IdempotentApi =>
-                "One request executed; the other received the stored response.",
+                "The same unique-key claim selected one owner; the duplicate received the stored response.",
             _ => throw new ArgumentOutOfRangeException(nameof(mode))
         };
 

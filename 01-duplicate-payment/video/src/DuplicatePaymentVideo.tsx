@@ -134,7 +134,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
   const claimA = clamp(frame, [205, 250], [130, 650]);
   const claimB = clamp(frame, [218, 262], [130, 650]);
   const ownerA = clamp(frame, [263, 320, 355], [650, 1110, 1510]);
-  const ownerB = 650;
+  const ownerB = 555;
   const ownerLabelOpacity = clamp(frame, [258, 270], [0, 1]);
   const processingProgress = clamp(frame, [264, 345], [0, 1]);
   const completedOpacity = clamp(frame, [338, 350], [0, 1]);
@@ -334,7 +334,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
             letterSpacing: 2.4,
           }}
         >
-          IDEMPOTENCY KEY SELECTS ONE OWNER
+          UNIQUE CONSTRAINT + STORED RESPONSE = IDEMPOTENCY
         </div>
 
         <svg
@@ -355,7 +355,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
           </defs>
 
           <PhaseLabel x={80}>CALLERS</PhaseLabel>
-          <PhaseLabel x={560}>DURABLE KEY RECORD</PhaseLabel>
+          <PhaseLabel x={560}>UNIQUE KEY RECORD</PhaseLabel>
           <PhaseLabel x={1070}>PROVIDER</PhaseLabel>
           <PhaseLabel x={1460}>LEDGER</PhaseLabel>
 
@@ -364,7 +364,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
           <line stroke={rule} x1="1400" x2="1400" y1="75" y2="520" />
 
           <path d="M130 220 H650 H1510" fill="none" markerEnd="url(#success-arrow)" stroke={green} strokeWidth="3" />
-          <path d="M130 420 H650" fill="none" stroke={muted} strokeWidth="3" />
+          <path d="M130 420 H590" fill="none" stroke={muted} strokeWidth="3" />
 
           <text fill={muted} fontFamily={mono.fontFamily} fontSize="16" x="80" y="185">
             REQUEST A
@@ -375,13 +375,13 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
 
           <rect fill={paper} height="270" stroke={ink} strokeWidth="3" width="310" x="590" y="170" />
           <text fill={ink} fontFamily={mono.fontFamily} fontSize="18" fontWeight="800" textAnchor="middle" x="745" y="215">
-            KEY: pay-1042
+            PRIMARY KEY: pay-1042
           </text>
           <text fill={green} fontSize="23" fontWeight="800" textAnchor="middle" x="745" y="275">
-            REQUEST A = OWNER
+            A INSERTS → OWNER
           </text>
           <text fill={muted} fontSize="23" fontWeight="700" textAnchor="middle" x="745" y="325">
-            REQUEST B = WAITS
+            B CONFLICTS → WAITS
           </text>
           <line stroke={rule} x1="630" x2="860" y1="355" y2="355" />
           <line stroke={green} strokeWidth="6" x1="630" x2={630 + 230 * processingProgress} y1="355" y2="355" />
@@ -405,10 +405,10 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
 
           <g opacity={ownerLabelOpacity}>
             <text fill={green} fontFamily={mono.fontFamily} fontSize="15" fontWeight="800" textAnchor="middle" x="650" y="152">
-              OWNER CONTINUES
+              INSERT SUCCEEDS
             </text>
-            <text fill={muted} fontFamily={mono.fontFamily} fontSize="15" fontWeight="700" textAnchor="middle" x="650" y="480">
-              DUPLICATE STOPS HERE
+            <text fill={muted} fontFamily={mono.fontFamily} fontSize="15" fontWeight="700" textAnchor="middle" x="555" y="480">
+              UNIQUE CONFLICT
             </text>
           </g>
 
@@ -437,7 +437,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
           <g opacity={successVerdictOpacity}>
             <line stroke={green} strokeWidth="4" x1="80" x2="1640" y1="610" y2="610" />
             <text fill={green} fontSize="27" fontWeight="800" x="80" y="652">
-              1 BUSINESS OPERATION → 1 CHARGE → SAME RESPONSE
+              UNIQUE CLAIM → 1 CHARGE → SAME RESPONSE
             </text>
           </g>
         </svg>
@@ -463,7 +463,7 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         <span>
           {frame < 190
             ? "BASELINE: 2 CHARGES"
-            : `IDEMPOTENT: ${props.summary.providerCharges} CHARGE / ${props.summary.replayedResponses} REPLAY`}
+            : `FULL IDEMPOTENCY: ${props.summary.providerCharges} CHARGE / ${props.summary.replayedResponses} REPLAY`}
         </span>
       </footer>
     </AbsoluteFill>
