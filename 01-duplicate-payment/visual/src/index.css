@@ -372,16 +372,6 @@ video:focus-visible {
   opacity: 0.42;
 }
 
-.prediction > .action-button {
-  margin-top: 1.5rem;
-}
-
-.prediction > small {
-  margin-left: 0.8rem;
-  color: var(--muted);
-  font-size: 0.7rem;
-}
-
 .spin {
   animation: spin 0.9s linear infinite;
 }
@@ -408,6 +398,49 @@ video:focus-visible {
 
 .experiment-section .section-heading > span {
   color: #8fb4ff;
+}
+
+.experiment-section .scenario-layout {
+  margin-bottom: 4rem;
+}
+
+.experiment-section .request-fixture {
+  border-color: #f5f5f4;
+}
+
+.experiment-section .request-fixture > div,
+.experiment-section .prediction > div,
+.experiment-section .prediction > div button {
+  border-color: #383836;
+}
+
+.experiment-section .request-fixture span,
+.experiment-section .request-fixture p,
+.experiment-section .prediction > div button small {
+  color: #aaa9a3;
+}
+
+.experiment-section .request-fixture code,
+.experiment-section .prediction legend,
+.experiment-section .prediction > div button {
+  color: #f5f5f4;
+}
+
+.experiment-section .prediction > div button > span {
+  color: #8fb4ff;
+}
+
+.experiment-section .prediction > div button:hover {
+  background: #191919;
+}
+
+.experiment-section .prediction > div button[data-selected="true"] {
+  background: #f1f0eb;
+  color: #151515;
+}
+
+.experiment-section .prediction > div button[data-selected="true"] small {
+  color: #555550;
 }
 
 .mode-selector {

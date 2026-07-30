@@ -9,11 +9,11 @@ where duplicate protection must live and what each strategy actually guarantees.
 docker compose -f infra/compose.yaml up --build
 ```
 
-Open [http://localhost:4173](http://localhost:4173). The lesson asks for a
-prediction, runs two real concurrent requests, and plots both requests on one
-execution timeline. The diagram shows the owner claim, provider call, ledger
-effect, and response replay without a numbered walkthrough. The Remotion recap
-and raw trace are optional.
+Open [http://localhost:4173](http://localhost:4173). One experiment keeps the
+payment and concurrent requests fixed while you switch the ownership rule. You
+can predict the unprotected result, run any of the three modes, and compare the
+owner claim, provider call, ledger effect, and response replay on one execution
+timeline. The Remotion recap and raw trace are optional.
 
 Stop the lab with:
 

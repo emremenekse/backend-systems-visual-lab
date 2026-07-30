@@ -409,8 +409,7 @@ export function App() {
             <span>01 / Duplicate payment</span>
           </a>
           <nav aria-label="Lesson sections">
-            <a href="#scenario">Race</a>
-            <a href="#experiment">Ownership</a>
+            <a href="#experiment">Experiment</a>
             <a href="#explanation">Answer</a>
           </nav>
           <code>API: connected</code>
@@ -441,80 +440,53 @@ export function App() {
           </div>
         </section>
 
-        <section className="page-shell lesson-section" id="scenario">
-          <SectionHeading number="01" title="See the race">
-            Two HTTP requests carry the same business identity. Predict whether
-            the API treats them as one operation or two.
-          </SectionHeading>
-
-          <div className="scenario-layout">
-            <div className="request-fixture">
-              <div>
-                <span>payment_intent_id</span>
-                <code>pi_ord_1042</code>
-              </div>
-              <div>
-                <span>amount</span>
-                <code>499.90 USD</code>
-              </div>
-              <div>
-                <span>arrival</span>
-                <code>request A at 0ms</code>
-                <code>request B at +12ms</code>
-              </div>
-              <p>Both requests carry the same business intent.</p>
-            </div>
-
-            <fieldset className="prediction">
-              <legend>
-                With no duplicate protection, how many provider charges are
-                created?
-              </legend>
-              <div>
-                {predictions.map((item) => (
-                  <button
-                    aria-pressed={prediction === item.value}
-                    data-selected={prediction === item.value}
-                    key={item.value}
-                    onClick={() => setPrediction(item.value)}
-                    type="button"
-                  >
-                    <span>{prediction === item.value ? "●" : "○"}</span>
-                    <strong>{item.label}</strong>
-                    <small>{item.note}</small>
-                  </button>
-                ))}
-              </div>
-              <button
-                className="action-button"
-                disabled={!prediction || isRunning}
-                onClick={() => runScenario("unprotected")}
-                type="button"
-              >
-                {isRunning && mode === "unprotected" ? (
-                  <RefreshCw
-                    aria-hidden="true"
-                    className="spin"
-                    size={15}
-                  />
-                ) : (
-                  <Play aria-hidden="true" fill="currentColor" size={14} />
-                )}
-                {isRunning && mode === "unprotected"
-                  ? "Sending both requests"
-                  : "Run without protection"}
-              </button>
-              {!prediction ? <small>Choose an answer first.</small> : null}
-            </fieldset>
-          </div>
-        </section>
-
         <section className="experiment-section" id="experiment">
           <div className="page-shell lesson-section">
-            <SectionHeading number="02" title="Choose who owns the operation">
-              The fix is an ownership decision. One request executes; the
-              duplicate is rejected or receives the stored result.
+            <SectionHeading number="01" title="Run one race three ways">
+              The requests never change. Choose the ownership rule, run the
+              race, and watch where the duplicate is stopped or replayed.
             </SectionHeading>
+
+            <div className="scenario-layout">
+              <div className="request-fixture">
+                <div>
+                  <span>payment_intent_id</span>
+                  <code>pi_ord_1042</code>
+                </div>
+                <div>
+                  <span>amount</span>
+                  <code>499.90 USD</code>
+                </div>
+                <div>
+                  <span>arrival</span>
+                  <code>request A at 0ms</code>
+                  <code>request B at +12ms</code>
+                </div>
+                <p>Same business intent. Two concurrent HTTP requests.</p>
+              </div>
+
+              <fieldset className="prediction">
+                <legend>
+                  With no duplicate protection, how many provider charges are
+                  created?
+                </legend>
+                <div>
+                  {predictions.map((item) => (
+                    <button
+                      aria-pressed={prediction === item.value}
+                      data-selected={prediction === item.value}
+                      key={item.value}
+                      onClick={() => setPrediction(item.value)}
+                      type="button"
+                    >
+                      <span>{prediction === item.value ? "●" : "○"}</span>
+                      <strong>{item.label}</strong>
+                      <small>{item.note}</small>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
 
             <div
               className="mode-selector"
@@ -606,7 +578,7 @@ export function App() {
         </section>
 
         <section className="page-shell lesson-section" id="explanation">
-          <SectionHeading number="03" title="Explain the design">
+          <SectionHeading number="02" title="Explain the design">
             A complete answer names the operation identity, the execution owner,
             the stored result, and the failure boundary.
           </SectionHeading>
