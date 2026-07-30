@@ -1,20 +1,48 @@
 # Backend Systems Visual Lab
 
-A collection of independent backend engineering labs.
+Runnable backend failure scenarios explained with real code and browser visuals.
 
-Each numbered folder is a complete project. Its backend language, database, infrastructure, tests, interactive visual, and video live together.
+## Run the first lab
+
+You only need Docker Compose 2.20 or newer:
+
+```bash
+docker compose up -d --build
+```
+
+Open [http://localhost:4173](http://localhost:4173).
+
+Stop everything with:
+
+```bash
+docker compose down
+```
+
+## What you will examine
+
+The first lab sends the same payment twice and compares three outcomes:
+
+| Mode | Result |
+| --- | --- |
+| No protection | Two requests can create two charges |
+| Unique constraint only | One charge; the duplicate request fails |
+| Full idempotency workflow | One charge; both requests receive the same response |
+
+Run each mode, follow the execution diagram, then open the raw runtime trace if
+you want the implementation detail.
+
+## Repository shape
+
+Each numbered folder is an independent project. Its language and stack may
+change without affecting the other labs.
 
 ```text
 01-duplicate-payment/
-  backend/
-  visual/
-  video/
-  infra/
-  tests/
-  README.md
+  backend/   .NET API, provider, and tests
+  visual/    React experiment and browser animation
+  video/     optional Remotion export
+  infra/     Docker Compose
 ```
-
-The backend stack may change between labs. One can use TypeScript, another .NET, Go, or Java.
 
 ## Labs
 
@@ -22,4 +50,4 @@ The backend stack may change between labs. One can use TypeScript, another .NET,
 | --- | --- | --- |
 | [01](01-duplicate-payment/README.md) | Duplicate payment and idempotency · .NET | Runnable |
 
-[See the roadmap](ROADMAP.md)
+[Roadmap](ROADMAP.md)

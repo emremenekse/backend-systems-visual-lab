@@ -1,66 +1,36 @@
 # 01 — Duplicate Payment
 
-Two concurrent requests attempt to charge the same payment intent. The lab shows
-where duplicate protection must live and what each strategy actually guarantees.
+Two concurrent requests try to charge the same payment intent. The lab shows
+which protection actually prevents a duplicate financial side effect.
 
 ## Run it
 
-```bash
-docker compose -f infra/compose.yaml up --build
-```
-
-Open [http://localhost:4173](http://localhost:4173). One experiment keeps the
-payment and concurrent requests fixed while you change the duplicate-handling
-contract. Run all three modes to see how a database unique constraint first
-blocks a duplicate, then becomes the atomic claim underneath a full idempotency
-workflow with stored-response replay. The Remotion recap and raw trace are
-optional.
-
-Stop the lab with:
+From the repository root:
 
 ```bash
-docker compose -f infra/compose.yaml down
+docker compose up -d --build
 ```
 
-## Modes
+Open [http://localhost:4173](http://localhost:4173).
 
-| Mode | Result |
-| --- | --- |
-| Unprotected | The customer can be charged twice |
-| Unique constraint only | The customer is charged once; request B returns an error |
-| Full idempotency workflow | The unique-constraint primitive is extended with state and response replay |
+## What to look for
 
-## Stack
+| Mode | What request B does | Customer result |
+| --- | --- | --- |
+| No protection | Calls the provider | Can be charged twice |
+| Unique constraint only | Loses the unique insert | Charged once; B gets an error |
+| Full idempotency workflow | Waits and replays A's stored response | Charged once; A and B get the same result |
 
-- .NET 10 Minimal API
-- PostgreSQL 17 and explicit SQL
-- xUnit + Testcontainers concurrency tests
-- React + TypeScript event timeline
-- Remotion video generated from the same trace
-- Docker Compose
+The key distinction:
+
+> The unique constraint selects one owner. Stored state and response replay
+> complete the idempotency contract.
 
 ## Project map
 
 ```text
 backend/   API, fake provider, and integration tests
-visual/    live interactive trace
-video/     trace-driven Remotion composition
+visual/    interactive experiment and execution animation
+video/     optional Remotion export
 infra/     Docker Compose
-```
-
-## Verify
-
-```bash
-dotnet test backend/DuplicatePayment.slnx
-npm --prefix visual test
-npm --prefix visual run build
-npm --prefix video run typecheck
-npm --prefix video run publish:visual
-```
-
-To render a fresh live run, keep Docker Compose running and execute:
-
-```bash
-npm --prefix video run capture
-npm --prefix video run render
 ```

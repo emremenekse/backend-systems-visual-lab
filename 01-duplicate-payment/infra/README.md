@@ -7,11 +7,11 @@
 - .NET API on port `8080`
 - visual lab on port `4173`
 
-Run it from `01-duplicate-payment`:
+Run the lab from the repository root:
 
 ```bash
-docker compose -f infra/compose.yaml up --build
+docker compose up -d --build
 ```
 
-Use `docker compose -f infra/compose.yaml down -v` when you also want to remove
-the lab database volume.
+Use `docker compose down -v` when you also want to remove the lab database
+volume.
