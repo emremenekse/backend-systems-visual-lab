@@ -3,7 +3,7 @@ import type { LabRunResult, PaymentMode } from "./types";
 export interface LessonMode {
   title: string;
   mechanism: string;
-  promise: string;
+  guarantee: string;
   explanation: string;
   limitation: string;
   interviewLine: string;
@@ -21,30 +21,30 @@ export interface StoryStep {
 
 export const lessonModes: Record<PaymentMode, LessonMode> = {
   unprotected: {
-    title: "Korumasız",
-    mechanism: "Her istek bağımsız çalışır",
-    promise: "Problemi görünür kılar",
+    title: "No protection",
+    mechanism: "Every request executes independently",
+    guarantee: "None",
     explanation:
-      "API iki HTTP isteğini iki ayrı iş olarak kabul eder. İkisi de ödeme sağlayıcısına ulaşır.",
+      "The API treats two HTTP requests as two separate operations. Both reach the payment provider.",
     limitation:
-      "Retry, çift tıklama veya ağ tekrarında aynı business operation yeniden çalışır.",
+      "A retry, double click, or network redelivery can repeat the same business operation.",
     interviewLine:
-      "HTTP request sayısını değil, business operation kimliğini tekilleştirmeliyiz.",
+      "Deduplicate the business operation, not the HTTP request.",
     codeLanguage: "csharp",
-    code: `// İki istek de bu satıra ulaşır.
+    code: `// Both requests can reach this line.
 var charge = await provider.ChargeAsync(payment);
 await InsertPaymentAsync(charge);`,
   },
   "database-constraint": {
-    title: "Database guard",
-    mechanism: "Unique index bir sahip seçer",
-    promise: "Aynı intent için tek charge",
+    title: "Database constraint",
+    mechanism: "A unique index selects one owner",
+    guarantee: "At most one charge for one payment intent",
     explanation:
-      "İki istek aynı kaydı eklemeye çalışır. PostgreSQL unique index yalnızca birine izin verir.",
+      "Both requests try to claim the same payment intent. PostgreSQL allows one insert and rejects the other.",
     limitation:
-      "Duplicate istek önceki HTTP cevabını otomatik olarak alamaz; bu nedenle tam bir idempotent API sözleşmesi değildir. Pending kayıt ve crash recovery ayrıca tasarlanmalıdır.",
+      "A constraint does not form a complete idempotent API contract: it cannot replay the original response, and it still needs a recovery plan for pending rows and process crashes.",
     interviewLine:
-      "Unique constraint son savunma hattıdır; fakat tek başına tam bir idempotent API sözleşmesi değildir.",
+      "A unique constraint is the last line of defence, not a complete idempotency contract.",
     codeLanguage: "sql",
     code: `CREATE UNIQUE INDEX ux_payment_intent
 ON payments (payment_intent_id);
@@ -55,14 +55,14 @@ ON CONFLICT DO NOTHING;`,
   },
   "idempotent-api": {
     title: "Idempotent API",
-    mechanism: "Key + request hash + response replay",
-    promise: "Tek execution, aynı response",
+    mechanism: "Key claim, request hash, response replay",
+    guarantee: "One execution; duplicate callers see the same result",
     explanation:
-      "İlk istek key'in sahibi olur. Sonucu saklar. Aynı key ile gelen diğer istek provider'a gitmeden saklanan cevabı alır.",
+      "The first request owns the key and stores its result. A duplicate with the same key and payload receives that stored response without calling the provider again.",
     limitation:
-      "Key saklama süresi, parametre uyuşmazlığı, owner crash'i ve provider sınırı ayrıca ele alınmalıdır.",
+      "You still need rules for key expiry, payload mismatch, owner crashes, provider timeouts, and reconciliation.",
     interviewLine:
-      "Aynı idempotency key ve aynı payload, aynı side effect ile aynı cevabı üretmelidir.",
+      "The same key and payload should produce the same side effect and the same response.",
     codeLanguage: "csharp",
     code: `var ownsKey = await TryClaimAsync(key, requestHash);
 
@@ -78,36 +78,8 @@ return charge;`,
   },
 };
 
-export const interviewQuestions = [
-  {
-    question: "Idempotency tam olarak nedir?",
-    answer:
-      "Aynı business operation birden fazla kez istendiğinde yeni side effect üretmeden aynı sonucu döndürebilme özelliğidir. Sadece duplicate request'i reddetmek değildir.",
-  },
-  {
-    question: "Unique constraint tek başına yeterli mi?",
-    answer:
-      "Tek bir veritabanındaki duplicate kaydı durdurur; fakat önceki response'u replay etmez, provider çağrısından sonraki crash'i çözmez ve servis sınırlarını tek başına korumaz.",
-  },
-  {
-    question: "Provider timeout verdi; charge oluştu mu bilmiyorsun. Ne yaparsın?",
-    answer:
-      "Aynı provider idempotency key ile retry ederim. Provider bunu desteklemiyorsa status sorgusu ve reconciliation gerekir; körlemesine yeni charge açmam.",
-  },
-  {
-    question: "Exactly-once processing var mı?",
-    answer:
-      "Uçtan uca dağıtık bir sistemde genel garanti olarak hayır. Pratik çözüm at-least-once delivery, durable state, idempotent consumer ve deduplication bileşimidir.",
-  },
-  {
-    question: "Idempotency kaydında ne saklarsın?",
-    answer:
-      "Key, request hash, processing/completed durumu, response body veya sonucu yeniden kuracak referans, timestamps ve TTL. Aynı key farklı payload ile gelirse conflict dönerim.",
-  },
-];
-
 export const sixtySecondAnswer =
-  "Çift ödeme, aynı business operation'ın retry veya eşzamanlı isteklerle birden fazla kez çalışmasıdır. İlk savunma hattım payment intent üzerinde database unique constraint olur. API seviyesinde idempotency key'i request hash ile atomik olarak claim eder, yalnızca owner isteğin provider'ı çağırmasına izin veririm. Başarılı response'u saklayıp duplicate isteklere replay ederim ve aynı key'i provider sınırına da taşırım. Timeout ve crash durumları için processing state, retry ve reconciliation tasarlarım. Böylece exactly-once iddiası yerine at-least-once delivery altında effectively-once side effect üretirim.";
+  "A duplicate payment is one business operation executing more than once. I identify that operation with a payment intent and idempotency key, then atomically select one owner in durable storage. Only the owner calls the provider; duplicates receive the stored response. I propagate the same key downstream and use processing states plus reconciliation for crashes and ambiguous timeouts. That gives an effectively-once side effect under at-least-once delivery—not a blanket exactly-once guarantee.";
 
 export function createStorySteps(result: LabRunResult): StoryStep[] {
   const charges = result.summary.providerCharges;
@@ -116,27 +88,27 @@ export function createStorySteps(result: LabRunResult): StoryStep[] {
   const guardStep: StoryStep =
     result.mode === "unprotected"
       ? {
-          label: "02 · Guard",
-          title: "İki istek de içeri alındı",
+          label: "02 / Decision",
+          title: "Both requests are accepted",
           explanation:
-            "API'nin aynı ödeme niyetini tanıyacağı bir key veya database kuralı yok.",
+            "The API has no key or database rule that identifies them as the same payment operation.",
           focus: "api",
           tone: "danger",
         }
       : result.mode === "database-constraint"
         ? {
-            label: "02 · Guard",
-            title: "Unique index bir owner seçti",
+            label: "02 / Decision",
+            title: "The unique index selects one owner",
             explanation:
-              "İlk insert kazandı. İkinci insert aynı payment intent nedeniyle conflict aldı.",
+              "The first insert wins. The second conflicts on the payment intent.",
             focus: "database",
             tone: "success",
           }
         : {
-            label: "02 · Guard",
-            title: "Idempotency key claim edildi",
+            label: "02 / Decision",
+            title: "Idempotency key selects one owner",
             explanation:
-              "Bir istek owner oldu; diğeri saklanacak cevabı beklemeye geçti.",
+              "The owner executes. The duplicate waits for the response that will be stored against the same key.",
             focus: "database",
             tone: "success",
           };
@@ -144,45 +116,45 @@ export function createStorySteps(result: LabRunResult): StoryStep[] {
   const providerStep: StoryStep =
     charges > 1
       ? {
-          label: "03 · Side effect",
-          title: "Provider iki charge oluşturdu",
+          label: "03 / Side effect",
+          title: "The provider creates two charges",
           explanation:
-            "İki ayrı HTTP çağrısı, müşterinin hesabında iki ayrı finansal etkiye dönüştü.",
+            "Two outbound calls become two separate financial effects on the customer's account.",
           focus: "provider",
           tone: "danger",
         }
       : {
-          label: "03 · Side effect",
-          title: "Provider yalnızca bir kez çağrıldı",
-          explanation:
+          label: "03 / Side effect",
+          title: "The provider is called once",
+            explanation:
             result.mode === "idempotent-api"
-              ? "İkinci istek provider'a ulaşmadı; ilk isteğin cevabı replay edildi."
-              : "Duplicate istek unique constraint tarafından provider çağrısından önce durduruldu.",
+              ? "The duplicate never reaches the provider; it receives a replay of the stored response."
+              : "The unique constraint stops the duplicate before a second provider call.",
           focus: "provider",
           tone: "success",
         };
 
   return [
     {
-      label: "01 · Race",
-      title: "Tek sipariş, iki eşzamanlı istek",
+      label: "01 / Race",
+      title: "One order produces two concurrent requests",
       explanation:
-        "İstek A ve İstek B aynı payment intent ve 499,90 TL tutarla aynı anda API'ye ulaştı.",
+        "Request A and Request B reach the API with the same payment intent and amount.",
       focus: "customer",
       tone: "neutral",
     },
     guardStep,
     providerStep,
     {
-      label: "04 · Sonuç",
+      label: "04 / Result",
       title: failed
-        ? "Invariant bozuldu: bir intent, iki charge"
-        : "Invariant korundu: bir intent, bir charge",
+        ? "Invariant broken: one intent, two charges"
+        : "Invariant preserved: one intent, one charge",
       explanation: failed
-        ? "Teknik olarak iki başarılı request var; business açısından bu bir veri ve para hatası."
+        ? "Both HTTP requests succeeded, but the business operation executed twice. This is a data and money error."
         : result.mode === "idempotent-api"
-          ? "İki request aynı payment ve charge ID'sini gördü. İkinci response replay edildi."
-          : "İkinci request duplicate olarak durduruldu; yeni finansal side effect oluşmadı.",
+          ? "Both callers see the same payment and charge IDs. The second response is a replay."
+          : "The duplicate is rejected before it can create another financial side effect.",
       focus: "result",
       tone: failed ? "danger" : "success",
     },

@@ -1,38 +1,14 @@
 import {
-  Activity,
   ArrowLeft,
   ArrowRight,
-  BookOpenCheck,
-  Check,
-  CheckCircle2,
   ChevronDown,
-  CircleDollarSign,
-  Code2,
-  Database,
-  FileKey2,
-  Landmark,
-  MousePointerClick,
   Play,
-  ReceiptText,
   RefreshCw,
-  Server,
-  ShieldCheck,
-  Sparkles,
-  TriangleAlert,
-  UserRound,
-  Video,
-  X,
 } from "lucide-react";
-import {
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { runLab } from "./api";
 import {
   createStorySteps,
-  interviewQuestions,
   lessonModes,
   sixtySecondAnswer,
 } from "./lesson";
@@ -51,17 +27,17 @@ const modes: PaymentMode[] = [
 ];
 
 const predictions = [
-  { value: "one", label: "1 kez", note: "İsteklerden biri engellenir" },
-  { value: "two", label: "2 kez", note: "İki istek de charge üretir" },
-  { value: "unsure", label: "Emin değilim", note: "Deneyerek görelim" },
+  { value: "one", label: "One charge", note: "One request is stopped" },
+  { value: "two", label: "Two charges", note: "Both requests execute" },
+  { value: "unsure", label: "Not sure", note: "Run the experiment" },
 ] as const;
 
 type Prediction = (typeof predictions)[number]["value"];
 
 const laneStyles: Record<TraceLane, string> = {
-  lab: "border-violet-400/35 bg-violet-400/10",
-  "request-a": "border-cyan-400/35 bg-cyan-400/10",
-  "request-b": "border-sky-400/35 bg-sky-400/10",
+  lab: "border-slate-500/35 bg-slate-500/10",
+  "request-a": "border-blue-400/35 bg-blue-400/10",
+  "request-b": "border-cyan-400/35 bg-cyan-400/10",
   database: "border-amber-400/35 bg-amber-400/10",
   provider: "border-emerald-400/35 bg-emerald-400/10",
 };
@@ -70,45 +46,32 @@ function TraceCard({ event }: { event: TraceEvent }) {
   return (
     <article
       className={`trace-card ${laneStyles[event.lane]}`}
-      aria-label={`${laneLabels[event.lane]}, ${event.offsetMs} milisaniye: ${event.label}`}
+      aria-label={`${laneLabels[event.lane]}, ${event.offsetMs} milliseconds: ${event.label}`}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div>
         <span className="event-kind">{event.kind}</span>
-        <span className="font-mono text-[11px] text-slate-500">
-          +{event.offsetMs.toFixed(1)}ms
-        </span>
+        <span>+{event.offsetMs.toFixed(1)}ms</span>
       </div>
-      <h4 className="mt-2 text-sm font-semibold text-slate-100">
-        {event.label}
-      </h4>
-      <p className="mt-1 text-xs leading-5 text-slate-400">{event.detail}</p>
+      <h4>{event.label}</h4>
+      <p>{event.detail}</p>
     </article>
   );
 }
 
 function DesktopTimeline({ events }: { events: TraceEvent[] }) {
   return (
-    <div className="hidden overflow-x-auto lg:block">
-      <div className="min-w-[980px]">
-        <div className="timeline-grid border-b border-slate-800 pb-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-600">
-            Sıra
-          </span>
+    <div className="desktop-timeline">
+      <div className="timeline-inner">
+        <div className="timeline-grid timeline-head">
+          <span>SEQ</span>
           {laneOrder.map((lane) => (
-            <span
-              className="text-center text-xs font-medium text-slate-400"
-              key={lane}
-            >
-              {laneLabels[lane]}
-            </span>
+            <span key={lane}>{laneLabels[lane]}</span>
           ))}
         </div>
-        <ol className="mt-3 space-y-2">
+        <ol>
           {events.map((event) => (
-            <li className="timeline-grid items-start" key={event.sequence}>
-              <span className="pt-3 font-mono text-[11px] text-slate-600">
-                {String(event.sequence).padStart(2, "0")}
-              </span>
+            <li className="timeline-grid" key={event.sequence}>
+              <span>{String(event.sequence).padStart(2, "0")}</span>
               {laneOrder.map((lane) => (
                 <div key={lane}>
                   {event.lane === lane ? <TraceCard event={event} /> : null}
@@ -124,14 +87,12 @@ function DesktopTimeline({ events }: { events: TraceEvent[] }) {
 
 function MobileTimeline({ events }: { events: TraceEvent[] }) {
   return (
-    <ol className="space-y-3 lg:hidden">
+    <ol className="mobile-timeline">
       {events.map((event) => (
         <li key={event.sequence}>
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="lane-badge">{laneLabels[event.lane]}</span>
-            <span className="font-mono text-[11px] text-slate-600">
-              #{event.sequence}
-            </span>
+          <div>
+            <span>{String(event.sequence).padStart(2, "0")}</span>
+            <span>{laneLabels[event.lane]}</span>
           </div>
           <TraceCard event={event} />
         </li>
@@ -140,17 +101,8 @@ function MobileTimeline({ events }: { events: TraceEvent[] }) {
   );
 }
 
-function FlowArrow() {
-  return (
-    <div className="flow-arrow" aria-hidden="true">
-      <ArrowRight className="h-4 w-4" />
-    </div>
-  );
-}
-
 interface SystemNodeProps {
   active: boolean;
-  icon: ReactNode;
   label: string;
   detail: string;
   tone: "neutral" | "danger" | "success";
@@ -158,20 +110,14 @@ interface SystemNodeProps {
 
 function SystemNode({
   active,
-  icon,
   label,
   detail,
   tone,
 }: SystemNodeProps) {
   return (
-    <div
-      className="system-node"
-      data-active={active}
-      data-tone={tone}
-    >
-      <span className="system-node-icon">{icon}</span>
-      <span className="system-node-label">{label}</span>
-      <span className="system-node-detail">{detail}</span>
+    <div className="system-node" data-active={active} data-tone={tone}>
+      <span>{label}</span>
+      <small>{detail}</small>
     </div>
   );
 }
@@ -183,111 +129,109 @@ function SystemMap({
   result: LabRunResult;
   activeStep: number;
 }) {
-  const steps = createStorySteps(result);
-  const step = steps[activeStep];
+  const step = createStorySteps(result)[activeStep];
   const tone = step?.tone ?? "neutral";
-  const charges = result.summary.providerCharges;
   const revealSideEffect = activeStep >= 2;
 
   return (
-    <div className="system-map-wrap" aria-label="Ödeme akışının görsel özeti">
-      <div className="system-map">
+    <figure className="system-figure">
+      <div
+        className="system-map"
+        aria-label="Payment flow"
+        role="img"
+      >
         <SystemNode
           active={step?.focus === "customer"}
-          detail="499,90 TL"
-          icon={<UserRound className="h-5 w-5" />}
-          label="Müşteri"
+          detail="$499.90"
+          label="Customer"
           tone={tone}
         />
-        <FlowArrow />
+        <span className="flow-arrow" aria-hidden="true">→</span>
         <div
           className="request-pair"
           data-active={step?.focus === "customer" || step?.focus === "api"}
           data-tone={tone}
         >
-          <span>Request A</span>
-          <span>Request B</span>
-          <small>Aynı payment intent</small>
+          <span>HTTP A</span>
+          <span>HTTP B</span>
+          <small>same payment_intent_id</small>
         </div>
-        <FlowArrow />
+        <span className="flow-arrow" aria-hidden="true">→</span>
         <SystemNode
           active={step?.focus === "api"}
           detail={lessonModes[result.mode].mechanism}
-          icon={<Server className="h-5 w-5" />}
           label="Payment API"
           tone={tone}
         />
-        <FlowArrow />
+        <span className="flow-arrow" aria-hidden="true">→</span>
         <SystemNode
           active={step?.focus === "database"}
           detail={
             result.mode === "unprotected"
-              ? "Guard yok"
+              ? "no guard"
               : result.mode === "database-constraint"
-                ? "Unique index"
-                : "Idempotency record"
+                ? "unique index"
+                : "key record"
           }
-          icon={<Database className="h-5 w-5" />}
           label="PostgreSQL"
           tone={tone}
         />
-        <FlowArrow />
+        <span className="flow-arrow" aria-hidden="true">→</span>
         <SystemNode
           active={step?.focus === "provider"}
           detail={
             revealSideEffect
-              ? `${result.summary.providerAttempts} çağrı`
-              : "Sonuç bekleniyor"
+              ? `${result.summary.providerAttempts} outbound call${
+                  result.summary.providerAttempts === 1 ? "" : "s"
+                }`
+              : "not revealed yet"
           }
-          icon={<Landmark className="h-5 w-5" />}
           label="Provider"
           tone={tone}
         />
-        <FlowArrow />
+        <span className="flow-arrow" aria-hidden="true">→</span>
         <div
-          className="statement-card"
+          className="ledger-node"
           data-active={step?.focus === "result"}
           data-tone={tone}
         >
-          <span className="system-node-icon">
-            <ReceiptText className="h-5 w-5" />
-          </span>
-          <span className="system-node-label">Hesap hareketi</span>
-          <div className="statement-lines">
+          <span>Ledger</span>
+          <div>
             {revealSideEffect ? (
-              Array.from({ length: charges }).map((_, index) => (
-                <span key={index}>
-                  <span>PAYMENT</span>
-                  <strong>−499,90 TL</strong>
-                </span>
-              ))
+              Array.from({ length: result.summary.providerCharges }).map(
+                (_, index) => <code key={index}>− $499.90</code>,
+              )
             ) : (
-              <small className="statement-placeholder">Henüz hareket yok</small>
+              <small>no entries shown</small>
             )}
           </div>
         </div>
       </div>
-    </div>
+      <figcaption>
+        The result is derived from the backend trace, not simulated in the
+        browser.
+      </figcaption>
+    </figure>
   );
 }
 
-function LessonProgress() {
-  const items = [
-    ["01", "Tahmin et"],
-    ["02", "Gerçek sistemi çalıştır"],
-    ["03", "Nedenini açıkla"],
-    ["04", "Mülakatta anlat"],
-  ];
-
+function SectionHeading({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: string;
+}) {
   return (
-    <ol className="learning-path" aria-label="Ders akışı">
-      {items.map(([number, label]) => (
-        <li key={number}>
-          <span>{number}</span>
-          <p>{label}</p>
-        </li>
-      ))}
-    </ol>
+    <header className="section-heading">
+      <span>{number}</span>
+      <div>
+        <h2>{title}</h2>
+        <p>{children}</p>
+      </div>
+    </header>
   );
 }
 
@@ -328,7 +272,7 @@ export function App() {
 
       window.setTimeout(() => {
         document
-          .getElementById("deney-sonucu")
+          .getElementById("experiment-result")
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
     } catch (nextError) {
@@ -339,7 +283,7 @@ export function App() {
       setError(
         nextError instanceof Error
           ? nextError.message
-          : "Deney çalıştırılamadı.",
+          : "The experiment could not be run.",
       );
     } finally {
       if (controllerRef.current === controller) {
@@ -356,130 +300,96 @@ export function App() {
     prediction === "two" && result?.mode === "unprotected";
 
   return (
-    <div className="min-h-screen text-slate-100">
+    <div className="app">
       <a className="skip-link" href="#main-content">
-        Derse geç
+        Skip to lesson
       </a>
 
       <header className="site-header">
         <div className="page-shell header-inner">
           <a className="brand" href="#main-content">
-            <span className="logo-mark" aria-hidden="true">
-              <Activity className="h-4 w-4" />
-            </span>
-            <span>
-              <strong>Backend Interview Lab</strong>
-              <small>01 · Duplicate Payment</small>
-            </span>
+            <strong>Backend Systems Lab</strong>
+            <span>01 / Duplicate payment</span>
           </a>
-          <nav aria-label="Ders bölümleri">
-            <a href="#senaryo">Senaryo</a>
-            <a href="#deney">Deney</a>
-            <a href="#mulakat">Mülakat</a>
-            <a href="#video">Video</a>
+          <nav aria-label="Lesson sections">
+            <a href="#scenario">Race</a>
+            <a href="#experiment">Ownership</a>
+            <a href="#explanation">Answer</a>
           </nav>
-          <span className="live-badge">
-            <span className="live-dot" />
-            gerçek backend
-          </span>
+          <code>API: connected</code>
         </div>
       </header>
 
       <main id="main-content">
-        <section className="lesson-hero">
-          <div className="page-shell">
-            <div className="hero-copy">
-              <div className="course-meta">
-                <span>Senior backend</span>
-                <span>15 dakika</span>
-                <span>Canlı deney</span>
-              </div>
-              <p className="eyebrow">Önce problemi anlayalım</p>
-              <h1>
-                Aynı ödeme isteği
-                <span> iki kez gelirse </span>
-                ne olur?
-              </h1>
-              <p className="hero-lead">
-                Bu derste idempotency ezberlemeyeceğiz. Önce çift ödemeyi
-                üretecek, sonra üç çözümün hangi garantiyi verdiğini gerçek kod
-                ve PostgreSQL üzerinde göreceğiz.
+        <section className="intro">
+          <div className="page-shell intro-grid">
+            <div>
+              <p className="kicker">Failure study 01</p>
+              <h1>Two requests.<br />One payment.</h1>
+              <p className="intro-copy">
+                The transport delivered the request twice. The business
+                operation must still happen once.
               </p>
-              <div className="invariant-card">
-                <span>Business invariant</span>
-                <strong>
-                  Bir payment intent, en fazla bir provider charge üretmeli.
-                </strong>
-              </div>
             </div>
-            <LessonProgress />
+            <aside className="invariant">
+              <span>Business invariant</span>
+              <p>
+                A payment intent must create no more than one provider charge.
+              </p>
+              <small>
+                This is the entire problem. Everything below exists to enforce
+                this sentence.
+              </small>
+            </aside>
           </div>
         </section>
 
-        <section className="page-shell lesson-section" id="senaryo">
-          <div className="section-heading">
-            <span className="section-number">01</span>
-            <div>
-              <p className="eyebrow">Senaryo</p>
-              <h2>Önce sonucu tahmin et</h2>
-              <p>
-                Production bug'larını anlamanın en hızlı yolu, sistemin hangi
-                varsayımı bozacağını önceden söylemeye çalışmaktır.
-              </p>
+        <section className="page-shell lesson-section" id="scenario">
+          <SectionHeading number="01" title="See the race">
+            Two HTTP requests carry the same business identity. Predict whether
+            the API treats them as one operation or two.
+          </SectionHeading>
+
+          <div className="scenario-layout">
+            <div className="request-fixture">
+              <div>
+                <span>payment_intent_id</span>
+                <code>pi_ord_1042</code>
+              </div>
+              <div>
+                <span>amount</span>
+                <code>499.90 USD</code>
+              </div>
+              <div>
+                <span>arrival</span>
+                <code>request A at 0ms</code>
+                <code>request B at +12ms</code>
+              </div>
+              <p>Both requests carry the same business intent.</p>
             </div>
-          </div>
 
-          <div className="scenario-grid">
-            <article className="checkout-card">
-              <div className="checkout-topbar">
-                <span>checkout.example</span>
-                <span>Güvenli ödeme</span>
-              </div>
-              <div className="order-row">
-                <div className="product-mark">01</div>
-                <div>
-                  <p>Backend Systems Course</p>
-                  <span>Sipariş #ORD-1042</span>
-                </div>
-                <strong>499,90 TL</strong>
-              </div>
-              <div className="fake-pay-button" aria-hidden="true">
-                <MousePointerClick aria-hidden="true" className="h-4 w-4" />
-                Ödemeyi tamamla
-              </div>
-              <div className="double-click-note">
-                <span>CLICK 1</span>
-                <span>+12ms</span>
-                <span>CLICK 2</span>
-              </div>
-            </article>
-
-            <fieldset className="prediction-card">
-              <legend>İki request aynı anda API'ye ulaşırsa kaç charge oluşur?</legend>
-              <div className="prediction-options">
+            <fieldset className="prediction">
+              <legend>
+                With no duplicate protection, how many provider charges are
+                created?
+              </legend>
+              <div>
                 {predictions.map((item) => (
                   <button
                     aria-pressed={prediction === item.value}
-                    className="prediction-option"
                     data-selected={prediction === item.value}
                     key={item.value}
                     onClick={() => setPrediction(item.value)}
                     type="button"
                   >
-                    <span className="prediction-check">
-                      {prediction === item.value ? (
-                        <Check aria-hidden="true" className="h-4 w-4" />
-                      ) : null}
-                    </span>
-                    <span>
-                      <strong>{item.label}</strong>
-                      <small>{item.note}</small>
-                    </span>
+                    <span>{prediction === item.value ? "●" : "○"}</span>
+                    <strong>{item.label}</strong>
+                    <small>{item.note}</small>
                   </button>
                 ))}
               </div>
               <button
-                className="primary-button"
+                className="action-button"
                 disabled={!prediction || isRunning}
                 onClick={() => runScenario("unprotected")}
                 type="button"
@@ -487,133 +397,117 @@ export function App() {
                 {isRunning && mode === "unprotected" ? (
                   <RefreshCw
                     aria-hidden="true"
-                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    className="spin"
+                    size={15}
                   />
                 ) : (
-                  <Play aria-hidden="true" className="h-4 w-4 fill-current" />
+                  <Play aria-hidden="true" fill="currentColor" size={14} />
                 )}
                 {isRunning && mode === "unprotected"
-                  ? "İki istek gönderiliyor…"
-                  : "Korumasız deneyi çalıştır"}
+                  ? "Sending both requests"
+                  : "Run without protection"}
               </button>
-              {!prediction ? (
-                <p className="prediction-hint">Deneyden önce bir tahmin seç.</p>
-              ) : null}
+              {!prediction ? <small>Choose an answer first.</small> : null}
             </fieldset>
           </div>
         </section>
 
-        <section className="experiment-band" id="deney">
+        <section className="experiment-section" id="experiment">
           <div className="page-shell lesson-section">
-            <div className="section-heading">
-              <span className="section-number">02</span>
-              <div>
-                <p className="eyebrow">Canlı deney</p>
-                <h2>Aynı yarışı üç farklı guard ile çalıştır</h2>
-                <p>
-                  Her seçenek gerçek API'ye iki eşzamanlı istek gönderir. Sonuç
-                  animasyon değil, backend trace'inden gelir.
-                </p>
-              </div>
-            </div>
+            <SectionHeading number="02" title="Choose who owns the operation">
+              The fix is an ownership decision. One request executes; the
+              duplicate is rejected or receives the stored result.
+            </SectionHeading>
 
-            <div className="mode-grid" role="group" aria-label="Koruma modu">
+            <div
+              className="mode-selector"
+              role="group"
+              aria-label="Duplicate protection mode"
+            >
+              <div className="mode-head" aria-hidden="true">
+                <span>MODE</span>
+                <span>MECHANISM</span>
+                <span>GUARANTEE</span>
+              </div>
               {modes.map((item, index) => {
                 const lesson = lessonModes[item];
-                const selected = item === mode;
-
                 return (
                   <button
-                    aria-pressed={selected}
-                    className="mode-card"
-                    data-selected={selected}
+                    aria-pressed={item === mode}
+                    data-selected={item === mode}
                     key={item}
                     onClick={() => selectMode(item)}
                     type="button"
                   >
-                    <span className="mode-index">0{index + 1}</span>
-                    <span className="mode-copy">
-                      <strong>{lesson.title}</strong>
-                      <small>{lesson.mechanism}</small>
-                      <em>{lesson.promise}</em>
-                    </span>
-                    <span className="mode-radio">
-                      {selected ? <Check className="h-4 w-4" /> : null}
-                    </span>
+                    <span>0{index + 1} / {lesson.title}</span>
+                    <span>{lesson.mechanism}</span>
+                    <span>{lesson.guarantee}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="run-row">
-              <div>
-                <span>Seçili deney</span>
-                <strong>{selectedLesson.title}</strong>
-              </div>
+            <div className="run-bar">
+              <p>
+                Selected: <strong>{selectedLesson.title}</strong>
+              </p>
               <button
-                className="primary-button"
+                className="action-button"
                 disabled={isRunning}
                 onClick={() => runScenario()}
                 type="button"
               >
                 {isRunning ? (
-                  <RefreshCw
-                    aria-hidden="true"
-                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
-                  />
+                  <RefreshCw aria-hidden="true" className="spin" size={15} />
                 ) : (
-                  <Play aria-hidden="true" className="h-4 w-4 fill-current" />
+                  <Play aria-hidden="true" fill="currentColor" size={14} />
                 )}
-                {isRunning ? "Race condition oluşturuluyor…" : "Deneyi çalıştır"}
+                {isRunning ? "Running race" : "Run experiment"}
               </button>
             </div>
 
             <div aria-live="assertive">
               {error ? (
                 <div className="error-panel" role="alert">
-                  <TriangleAlert aria-hidden="true" className="h-5 w-5" />
-                  <div>
-                    <p className="font-medium">Deney çalıştırılamadı</p>
-                    <p className="mt-1 break-all text-sm text-rose-200/75">
-                      {error}
-                    </p>
-                  </div>
+                  <strong>Experiment failed.</strong>
+                  <span>{error}</span>
                 </div>
               ) : null}
             </div>
 
-            <div className="result-anchor" id="deney-sonucu">
+            <div id="experiment-result">
               {result ? (
-                <div className="guided-result">
-                  <div className="result-toolbar">
+                <article className="guided-result">
+                  <header className="result-header">
                     <div>
-                      <span>
-                        Gerçek çalışma · {shortId(result.runId)}
-                      </span>
+                      <span>RUN {shortId(result.runId)}</span>
                       <strong>
-                        Adım {storyStep + 1}/{storySteps.length}
+                        {String(storyStep + 1).padStart(2, "0")} /{" "}
+                        {String(storySteps.length).padStart(2, "0")}
                       </strong>
                     </div>
-                    <div className="step-dots" aria-label="Anlatım adımları">
+                    <div className="step-selector" aria-label="Explanation steps">
                       {storySteps.map((step, index) => (
                         <button
-                          aria-label={`${index + 1}. adıma git: ${step.title}`}
+                          aria-label={`Go to step ${index + 1}: ${step.title}`}
                           aria-pressed={index === storyStep}
                           data-current={index === storyStep}
                           key={step.label}
                           onClick={() => setStoryStep(index)}
                           type="button"
-                        />
+                        >
+                          {String(index + 1).padStart(2, "0")}
+                        </button>
                       ))}
                     </div>
-                  </div>
+                  </header>
 
                   <SystemMap activeStep={storyStep} result={result} />
 
                   {currentStory ? (
                     <div
                       aria-live="polite"
-                      className="story-explanation"
+                      className="story"
                       data-tone={currentStory.tone}
                     >
                       <span>{currentStory.label}</span>
@@ -624,23 +518,19 @@ export function App() {
                     </div>
                   ) : null}
 
-                  <div className="story-controls">
+                  <footer className="story-footer">
                     <button
-                      className="secondary-button"
                       disabled={storyStep === 0}
                       onClick={() =>
                         setStoryStep((current) => Math.max(0, current - 1))
                       }
                       type="button"
                     >
-                      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-                      Önceki
+                      <ArrowLeft aria-hidden="true" size={15} />
+                      Previous
                     </button>
-                    <span>
-                      Her adımda yalnızca bir karar veya side effect gösterilir.
-                    </span>
+                    <p>One decision or side effect per step.</p>
                     <button
-                      className="primary-button"
                       disabled={isFinalStep}
                       onClick={() =>
                         setStoryStep((current) =>
@@ -649,247 +539,135 @@ export function App() {
                       }
                       type="button"
                     >
-                      Sonraki adım
-                      <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                      Next
+                      <ArrowRight aria-hidden="true" size={15} />
                     </button>
-                  </div>
+                  </footer>
 
                   {isFinalStep ? (
-                    <div className="result-summary">
-                      <article>
-                        <CircleDollarSign className="h-5 w-5" />
-                        <span>Provider charge</span>
-                        <strong>{result.summary.providerCharges}</strong>
-                      </article>
-                      <article>
-                        <Landmark className="h-5 w-5" />
-                        <span>Provider çağrısı</span>
-                        <strong>{result.summary.providerAttempts}</strong>
-                      </article>
-                      <article>
-                        <ShieldCheck className="h-5 w-5" />
-                        <span>Replay edilen cevap</span>
-                        <strong>{result.summary.replayedResponses}</strong>
-                      </article>
-                      <div
-                        className="prediction-result"
-                        data-correct={predictionWasCorrect}
-                      >
-                        {result.mode === "unprotected" && prediction ? (
-                          <>
-                            {predictionWasCorrect ? (
-                              <CheckCircle2 className="h-5 w-5" />
-                            ) : (
-                              <Sparkles className="h-5 w-5" />
-                            )}
-                            <span>
-                              {predictionWasCorrect
-                                ? "Tahminin doğruydu."
-                                : "İlk tahmin farklıydı; artık iki charge'ın nedenini görebiliyorsun."}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-5 w-5" />
-                            <span>{selectedLesson.promise}</span>
-                          </>
-                        )}
-                      </div>
+                    <div className="result-stats">
+                      <div><span>Provider calls</span><strong>{result.summary.providerAttempts}</strong></div>
+                      <div><span>Charges</span><strong>{result.summary.providerCharges}</strong></div>
+                      <div><span>Replayed responses</span><strong>{result.summary.replayedResponses}</strong></div>
+                      <p data-correct={predictionWasCorrect}>
+                        {result.mode === "unprotected" && prediction
+                          ? predictionWasCorrect
+                            ? "Your prediction matched the trace."
+                            : "The trace shows why the first prediction was wrong."
+                          : selectedLesson.guarantee}
+                      </p>
                     </div>
                   ) : null}
-                </div>
+                </article>
               ) : (
-                <div className="experiment-empty">
-                  <BookOpenCheck aria-hidden="true" className="h-7 w-7" />
-                  <div>
-                    <strong>Bir modu seç ve gerçek sistemi çalıştır.</strong>
-                    <p>
-                      Sonucu ham log yerine dört kontrollü adımda okuyacaksın.
-                    </p>
-                  </div>
+                <div className="result-empty">
+                  <span>NO RUN YET</span>
+                  <p>Select a mode and run the experiment.</p>
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        <section className="page-shell lesson-section" id="aciklama">
-          <div className="section-heading">
-            <span className="section-number">03</span>
-            <div>
-              <p className="eyebrow">Mekanizmayı açıkla</p>
-              <h2>Çalışması yetmez; neden çalıştığını söyle</h2>
-              <p>
-                Mülakatta araç adı değil, garanti sınırı ve failure mode
-                konuşulur.
-              </p>
-            </div>
-          </div>
+        <section className="page-shell lesson-section" id="explanation">
+          <SectionHeading number="03" title="Explain the design">
+            A complete answer names the operation identity, the execution owner,
+            the stored result, and the failure boundary.
+          </SectionHeading>
 
-          <div className="explanation-grid">
-            <article className="explanation-card">
-              <div className="explanation-icon">
-                {mode === "idempotent-api" ? (
-                  <FileKey2 className="h-5 w-5" />
-                ) : mode === "database-constraint" ? (
-                  <Database className="h-5 w-5" />
-                ) : (
-                  <X className="h-5 w-5" />
-                )}
-              </div>
-              <p className="eyebrow">Ne değişti?</p>
-              <h3>{selectedLesson.title}</h3>
-              <p>{selectedLesson.explanation}</p>
-            </article>
-            <article className="explanation-card warning-card">
-              <TriangleAlert className="h-5 w-5" />
-              <p className="eyebrow">Neyi çözmez?</p>
-              <h3>Garanti sınırı</h3>
-              <p>{selectedLesson.limitation}</p>
-            </article>
-            <article className="explanation-card answer-card">
-              <ShieldCheck className="h-5 w-5" />
-              <p className="eyebrow">Mülakat cümlesi</p>
-              <blockquote>“{selectedLesson.interviewLine}”</blockquote>
-            </article>
-          </div>
+          <dl className="mechanism-notes">
+            <div>
+              <dt>Mechanism</dt>
+              <dd>
+                <strong>{selectedLesson.title}</strong>
+                <p>{selectedLesson.explanation}</p>
+              </dd>
+            </div>
+            <div>
+              <dt>Guarantee</dt>
+              <dd>{selectedLesson.guarantee}</dd>
+            </div>
+            <div>
+              <dt>Boundary</dt>
+              <dd>{selectedLesson.limitation}</dd>
+            </div>
+            <div>
+              <dt>Say this</dt>
+              <dd>“{selectedLesson.interviewLine}”</dd>
+            </div>
+          </dl>
 
           <details className="code-disclosure">
             <summary>
+              <span>Implementation sketch</span>
               <span>
-                <Code2 aria-hidden="true" className="h-5 w-5" />
-                Bu mekanizmanın kodunu gör
-              </span>
-              <ChevronDown aria-hidden="true" className="h-4 w-4" />
-            </summary>
-            <div>
-              <span className="code-language">
                 {selectedLesson.codeLanguage}
+                <ChevronDown aria-hidden="true" size={15} />
               </span>
-              <pre>
-                <code>{selectedLesson.code}</code>
-              </pre>
-            </div>
+            </summary>
+            <pre><code>{selectedLesson.code}</code></pre>
           </details>
-        </section>
 
-        <section className="interview-band" id="mulakat">
-          <div className="page-shell lesson-section">
-            <div className="section-heading">
-              <span className="section-number">04</span>
-              <div>
-                <p className="eyebrow">Mülakat hazırlığı</p>
-                <h2>Konuyu 60 saniyede anlatabiliyor musun?</h2>
-                <p>
-                  Aşağıdaki cevap araç listesi değil; invariant, mekanizma ve
-                  failure recovery sırasını izler.
-                </p>
-              </div>
-            </div>
+          <article className="model-answer">
+            <header>
+              <span>60-SECOND ANSWER</span>
+              <span>INVARIANT → OWNER → REPLAY → RECOVERY</span>
+            </header>
+            <blockquote>{sixtySecondAnswer}</blockquote>
+          </article>
 
-            <article className="sixty-second-answer">
-              <div>
-                <span className="answer-time">60 sn</span>
-                <span className="eyebrow">Örnek senior cevap</span>
-              </div>
-              <blockquote>“{sixtySecondAnswer}”</blockquote>
-            </article>
-
-            <div className="question-list">
-              {interviewQuestions.map((item, index) => (
-                <details key={item.question}>
-                  <summary>
-                    <span>0{index + 1}</span>
-                    <strong>{item.question}</strong>
-                    <ChevronDown aria-hidden="true" className="h-4 w-4" />
-                  </summary>
-                  <p>{item.answer}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="page-shell lesson-section" id="video">
-          <div className="section-heading">
-            <span className="section-number">05</span>
-            <div>
-              <p className="eyebrow">Görsel tekrar</p>
-              <h2>Akışı videoda yeniden izle</h2>
-              <p>
-                Bu Remotion çıktısı repoda üretiliyor ve artık dersin içinden
-                doğrudan izlenebiliyor.
-              </p>
-            </div>
-          </div>
-
-          <div className="video-grid">
-            <div className="video-frame">
+          <details className="recap-video" id="video">
+            <summary>
+              <span>15-second visual recap</span>
+              <span>
+                optional
+                <ChevronDown aria-hidden="true" size={15} />
+              </span>
+            </summary>
+            <figure className="video-figure">
               <video
                 controls
                 playsInline
                 poster="/duplicate-payment-explainer.png"
                 preload="metadata"
               >
-                <source
-                  src="/duplicate-payment-explainer.mp4"
-                  type="video/mp4"
-                />
-                Tarayıcın MP4 video oynatmayı desteklemiyor.
+                <source src="/duplicate-payment-explainer.mp4" type="video/mp4" />
+                Your browser does not support MP4 video.
               </video>
-            </div>
-            <aside className="video-notes">
-              <Video aria-hidden="true" className="h-6 w-6" />
-              <p className="eyebrow">İzlerken üç şeyi takip et</p>
-              <ol>
-                <li>
-                  <span>1</span>
-                  İki request aynı business operation mı?
-                </li>
-                <li>
-                  <span>2</span>
-                  Hangi katman execution owner'ını seçiyor?
-                </li>
-                <li>
-                  <span>3</span>
-                  İkinci request yeni side effect mi, replay mi alıyor?
-                </li>
-              </ol>
-              <a href="/duplicate-payment-explainer.mp4" download>
-                MP4 olarak indir
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </aside>
-          </div>
+              <figcaption>
+                <p>
+                  Watch for the operation identity, the owner, and the replay.
+                </p>
+                <a href="/duplicate-payment-explainer.mp4" download>
+                  Download MP4
+                  <ArrowRight aria-hidden="true" size={15} />
+                </a>
+              </figcaption>
+            </figure>
+          </details>
         </section>
 
-        <section className="page-shell pb-20">
+        <section className="page-shell trace-section">
           <details className="technical-trace">
             <summary>
+              <span>Raw runtime trace</span>
               <span>
-                <Activity aria-hidden="true" className="h-5 w-5" />
-                Teknik derinlik: ham runtime trace
-              </span>
-              <span>
-                {result ? `${result.trace.length} event` : "Önce deneyi çalıştır"}
-                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+                {result ? `${result.trace.length} events` : "run required"}
+                <ChevronDown aria-hidden="true" size={15} />
               </span>
             </summary>
-            <div className="technical-trace-content">
+            <div>
               {result ? (
                 <>
                   <p>
-                    Bu bölüm canlı backend tarafından üretildi. Yukarıdaki
-                    eğitim akışının altında yatan tüm olaylar burada.
+                    These events were emitted by the API, database, and provider
+                    during the selected run.
                   </p>
                   <DesktopTimeline events={result.trace} />
                   <MobileTimeline events={result.trace} />
                 </>
               ) : (
-                <p>
-                  Bir deney çalıştırdığında request, database ve provider
-                  event'leri burada açılacak.
-                </p>
+                <p>Run an experiment to populate the trace.</p>
               )}
             </div>
           </details>

@@ -11,7 +11,8 @@ docker compose -f infra/compose.yaml up --build
 
 Open [http://localhost:4173](http://localhost:4173). The lesson asks for a
 prediction, runs two real concurrent requests, explains the result in four
-steps, and finishes with interview questions and a Remotion video.
+steps, and reduces the design to its invariant, execution owner, response
+replay, and recovery boundary. The Remotion recap and raw trace are optional.
 
 Stop the lab with:
 

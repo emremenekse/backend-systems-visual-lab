@@ -1,8 +1,8 @@
 # Guided lesson
 
-Vite + React lesson for predicting the outcome, running the live race,
-understanding each side effect, and rehearsing interview answers. The raw event
-trace is available only as optional technical depth.
+Vite + React lesson built around three ideas: the business invariant, execution
+ownership, and the guarantee boundary. It runs a real race and keeps the video,
+implementation sketch, and raw event trace as optional technical depth.
 
 ```bash
 npm install

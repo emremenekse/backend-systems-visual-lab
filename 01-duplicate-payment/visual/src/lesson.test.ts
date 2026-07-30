@@ -36,8 +36,8 @@ describe("guided lesson content", () => {
     const steps = createStorySteps(createResult("unprotected", 2));
 
     expect(steps).toHaveLength(4);
-    expect(steps[1]?.title).toContain("İki istek");
-    expect(steps[2]?.title).toContain("iki charge");
+    expect(steps[1]?.title).toContain("Both requests");
+    expect(steps[2]?.title).toContain("two charges");
     expect(steps[3]?.tone).toBe("danger");
   });
 

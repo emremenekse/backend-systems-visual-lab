@@ -8,59 +8,62 @@ import {
 } from "remotion";
 import type { LabRunResult } from "./types";
 
+const ink = "#171717";
+const paper = "#f3f1eb";
+const muted = "#73716b";
+const rule = "#b8b5ad";
+const blue = "#1849a9";
+const red = "#a32921";
+const green = "#176b46";
+
 const mono: CSSProperties = {
   fontFamily: "SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 };
 
 const modeLabels: Record<LabRunResult["mode"], string> = {
-  unprotected: "KORUMASIZ",
-  "database-constraint": "UNIQUE INDEX",
-  "idempotent-api": "IDEMPOTENCY KEY + REPLAY",
+  unprotected: "NO PROTECTION",
+  "database-constraint": "UNIQUE CONSTRAINT",
+  "idempotent-api": "IDEMPOTENCY KEY",
 };
 
-function opacityFor(
+function sceneOpacity(
   frame: number,
   start: number,
   end: number,
-  fadeOut = true,
+  keepVisible = false,
 ) {
-  const inputRange = fadeOut
-    ? [start, start + 12, end - 12, end]
-    : [start, start + 12, end];
-  const outputRange = fadeOut ? [0, 1, 1, 0] : [0, 1, 1];
+  const input = keepVisible
+    ? [start, start + 12, end]
+    : [start, start + 12, end - 12, end];
+  const output = keepVisible ? [0, 1, 1] : [0, 1, 1, 0];
 
-  return interpolate(
-    frame,
-    inputRange,
-    outputRange,
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    },
-  );
+  return interpolate(frame, input, output, {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 }
 
 function Scene({
   children,
   end,
-  fadeOut,
   frame,
+  keepVisible,
   start,
 }: {
   children: ReactNode;
   end: number;
-  fadeOut?: boolean;
   frame: number;
+  keepVisible?: boolean;
   start: number;
 }) {
-  const opacity = opacityFor(frame, start, end, fadeOut);
-  const translateY = interpolate(opacity, [0, 1], [24, 0]);
+  const opacity = sceneOpacity(frame, start, end, keepVisible);
+  const translateY = interpolate(opacity, [0, 1], [20, 0]);
 
   return (
     <div
       style={{
         position: "absolute",
-        inset: "185px 92px 70px",
+        inset: "180px 100px 90px",
         opacity,
         transform: `translateY(${translateY}px)`,
       }}
@@ -70,75 +73,54 @@ function Scene({
   );
 }
 
-function Arrow() {
+function Label({ children, color = blue }: { children: ReactNode; color?: string }) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        color: "#334155",
+        ...mono,
+        color,
+        fontSize: 17,
+        fontWeight: 700,
+        letterSpacing: 2.4,
       }}
     >
-      <div style={{ width: 80, height: 2, background: "#334155" }} />
-      <div
-        style={{
-          width: 0,
-          height: 0,
-          borderTop: "8px solid transparent",
-          borderBottom: "8px solid transparent",
-          borderLeft: "12px solid #334155",
-        }}
-      />
+      {children}
     </div>
   );
 }
 
-function Node({
-  accent,
-  eyebrow,
-  title,
+function RequestLine({
+  label,
+  target,
+  tone = blue,
 }: {
-  accent: string;
-  eyebrow: string;
-  title: string;
+  label: string;
+  target: string;
+  tone?: string;
 }) {
   return (
     <div
       style={{
-        display: "flex",
-        width: 260,
-        height: 180,
-        flexDirection: "column",
-        justifyContent: "center",
-        border: `2px solid ${accent}`,
-        borderRadius: 28,
-        background: `color-mix(in srgb, ${accent} 10%, #0f172a)`,
-        boxShadow: `0 28px 80px color-mix(in srgb, ${accent} 13%, transparent)`,
-        padding: 28,
+        display: "grid",
+        gridTemplateColumns: "230px 1fr 330px",
+        alignItems: "center",
+        gap: 26,
+        borderTop: `1px solid ${rule}`,
+        padding: "28px 0",
       }}
     >
       <span
         style={{
           ...mono,
-          color: accent,
-          fontSize: 16,
+          color: tone,
+          fontSize: 18,
           fontWeight: 700,
-          letterSpacing: 2,
         }}
       >
-        {eyebrow}
+        {label}
       </span>
-      <strong
-        style={{
-          marginTop: 16,
-          color: "#f8fafc",
-          fontSize: 28,
-          lineHeight: 1.2,
-        }}
-      >
-        {title}
-      </strong>
+      <div style={{ height: 2, background: tone }} />
+      <strong style={{ color: tone, fontSize: 26 }}>{target}</strong>
     </div>
   );
 }
@@ -149,17 +131,16 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
   const intro = spring({
     frame,
     fps,
-    config: { damping: 18, stiffness: 110 },
+    config: { damping: 20, stiffness: 115 },
   });
-  const isFailure = props.summary.providerCharges > 1;
+  const failed = props.summary.providerCharges > 1;
 
   return (
     <AbsoluteFill
       style={{
         overflow: "hidden",
-        background:
-          "radial-gradient(circle at 74% -10%, rgba(37,99,235,.22), transparent 48%), #070b16",
-        color: "#f8fafc",
+        background: paper,
+        color: ink,
         fontFamily:
           "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
       }}
@@ -168,9 +149,9 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.23,
+          opacity: 0.4,
           backgroundImage:
-            "linear-gradient(rgba(51,65,85,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(51,65,85,.22) 1px, transparent 1px)",
+            "linear-gradient(#d8d5cd 1px, transparent 1px), linear-gradient(90deg, #d8d5cd 1px, transparent 1px)",
           backgroundSize: "48px 48px",
         }}
       />
@@ -179,80 +160,40 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
         style={{
           position: "absolute",
           zIndex: 10,
-          top: 60,
-          left: 92,
-          right: 92,
+          top: 54,
+          left: 100,
+          right: 100,
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-end",
           justifyContent: "space-between",
+          borderBottom: `2px solid ${ink}`,
+          paddingBottom: 20,
           opacity: intro,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <div>
+          <strong style={{ fontSize: 24 }}>Backend Systems Lab</strong>
           <div
             style={{
-              display: "grid",
-              width: 52,
-              height: 52,
-              placeItems: "center",
-              border: "1px solid #5eead4",
-              borderRadius: 16,
-              background: "rgba(94,234,212,.09)",
-              color: "#5eead4",
               ...mono,
-              fontSize: 17,
-              fontWeight: 800,
+              marginTop: 7,
+              color: muted,
+              fontSize: 14,
+              letterSpacing: 1.8,
             }}
           >
-            01
-          </div>
-          <div>
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontSize: 20,
-                fontWeight: 800,
-              }}
-            >
-              Backend Interview Lab
-            </div>
-            <div
-              style={{
-                ...mono,
-                marginTop: 5,
-                color: "#64748b",
-                fontSize: 13,
-                letterSpacing: 2,
-              }}
-            >
-              DUPLICATE PAYMENT
-            </div>
+            01 / DUPLICATE PAYMENT
           </div>
         </div>
         <div
           style={{
             ...mono,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            border: "1px solid #334155",
-            borderRadius: 999,
-            background: "rgba(15,23,42,.72)",
-            color: "#94a3b8",
-            padding: "12px 18px",
+            color: muted,
             fontSize: 14,
-            letterSpacing: 1.5,
+            letterSpacing: 1.4,
           }}
         >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 999,
-              background: "#22c55e",
-            }}
-          />
-          CANLI TRACE · {props.trace.length} EVENT
+          {modeLabels[props.mode]} / {props.trace.length} EVENTS
         </div>
       </header>
 
@@ -261,375 +202,194 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
           style={{
             display: "grid",
             height: "100%",
-            gridTemplateColumns: "1.1fr .9fr",
-            gap: 90,
+            gridTemplateColumns: "1.15fr .85fr",
+            gap: 100,
             alignItems: "center",
           }}
         >
           <div>
-            <div
-              style={{
-                ...mono,
-                color: "#ff8a5b",
-                fontSize: 17,
-                fontWeight: 750,
-                letterSpacing: 3,
-              }}
-            >
-              PROBLEM
-            </div>
+            <Label>THE INVARIANT</Label>
             <h1
               style={{
-                maxWidth: 860,
-                margin: "24px 0 0",
-                fontSize: 92,
+                maxWidth: 920,
+                margin: "26px 0 0",
+                fontSize: 94,
+                fontWeight: 600,
                 lineHeight: 0.96,
                 letterSpacing: -6,
               }}
             >
-              Bir sipariş.
+              One payment intent.
               <br />
-              <span style={{ color: "#60a5fa" }}>İki tıklama.</span>
+              <span style={{ color: blue }}>At most one charge.</span>
             </h1>
+          </div>
+          <div style={{ borderTop: `4px solid ${ink}`, paddingTop: 28 }}>
+            <Label color={muted}>BUSINESS IDENTITY</Label>
+            <code
+              style={{
+                ...mono,
+                display: "block",
+                marginTop: 26,
+                color: ink,
+                fontSize: 31,
+              }}
+            >
+              payment_intent_id
+              <br />
+              = pi_ord_1042
+            </code>
             <p
               style={{
-                maxWidth: 760,
-                margin: "38px 0 0",
-                color: "#94a3b8",
-                fontSize: 28,
-                lineHeight: 1.55,
+                margin: "32px 0 0",
+                color: muted,
+                fontSize: 24,
+                lineHeight: 1.5,
               }}
             >
-              Kullanıcı aynı ödeme butonuna 12 milisaniye arayla iki kez bastı.
+              Transport retries do not create a new business operation.
             </p>
-          </div>
-
-          <div
-            style={{
-              overflow: "hidden",
-              border: "1px solid #334155",
-              borderRadius: 34,
-              background: "rgba(15,23,42,.85)",
-              boxShadow: "0 36px 100px rgba(0,0,0,.32)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                borderBottom: "1px solid #263146",
-                color: "#64748b",
-                padding: "22px 28px",
-                ...mono,
-                fontSize: 14,
-              }}
-            >
-              <span>SİPARİŞ #ORD-1042</span>
-              <span>PAYMENT INTENT</span>
-            </div>
-            <div style={{ padding: 34 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                }}
-              >
-                <strong style={{ fontSize: 28 }}>Backend Systems Course</strong>
-                <strong style={{ color: "#5eead4", fontSize: 38 }}>
-                  499,90 TL
-                </strong>
-              </div>
-              <div
-                style={{
-                  marginTop: 38,
-                  borderRadius: 18,
-                  background: "#2563eb",
-                  padding: "22px 28px",
-                  fontSize: 24,
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
-                Ödemeyi tamamla
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: 16,
-                  marginTop: 25,
-                  ...mono,
-                  color: "#ff8a5b",
-                  fontSize: 15,
-                  fontWeight: 750,
-                  letterSpacing: 2,
-                }}
-              >
-                <span>CLICK 1</span>
-                <span style={{ color: "#475569" }}>+12MS</span>
-                <span>CLICK 2</span>
-              </div>
-            </div>
           </div>
         </div>
       </Scene>
 
       <Scene end={220} frame={frame} start={90}>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div>
-              <div
-                style={{
-                  ...mono,
-                  color: "#60a5fa",
-                  fontSize: 17,
-                  fontWeight: 750,
-                  letterSpacing: 3,
-                }}
-              >
-                RACE CONDITION
-              </div>
-              <h2
-                style={{
-                  margin: "20px 0 0",
-                  fontSize: 64,
-                  lineHeight: 1,
-                  letterSpacing: -3,
-                }}
-              >
-                UI olayı değil.
-                <span style={{ color: "#60a5fa" }}> İki HTTP request.</span>
-              </h2>
-            </div>
-            <div
-              style={{
-                ...mono,
-                color: "#94a3b8",
-                fontSize: 15,
-                letterSpacing: 2,
-              }}
-            >
-              AYNI PAYMENT INTENT
-            </div>
-          </div>
-
+          <Label color={failed ? red : blue}>THE RACE</Label>
+          <h2
+            style={{
+              margin: "22px 0 58px",
+              fontSize: 68,
+              fontWeight: 600,
+              letterSpacing: -4,
+            }}
+          >
+            Two requests arrive. Who owns execution?
+          </h2>
+          <RequestLine label="REQUEST A / 0ms" target="provider charge #1" tone={red} />
+          <RequestLine label="REQUEST B / +12ms" target="provider charge #2" tone={red} />
           <div
             style={{
               display: "flex",
+              marginTop: 32,
               alignItems: "center",
-              justifyContent: "center",
-              marginTop: 105,
+              justifyContent: "space-between",
+              borderTop: `4px solid ${red}`,
+              paddingTop: 24,
             }}
           >
-            <Node accent="#60a5fa" eyebrow="REQUEST A" title="POST /payments" />
-            <Arrow />
-            <Node accent="#38bdf8" eyebrow="REQUEST B" title="POST /payments" />
-            <Arrow />
-            <Node accent="#a78bfa" eyebrow="PAYMENT API" title="Aynı anda çalışır" />
-            <Arrow />
-            <Node
-              accent={isFailure ? "#fb7185" : "#5eead4"}
-              eyebrow="BUSINESS EFFECT"
-              title={`${props.summary.providerCharges} provider charge`}
-            />
-          </div>
-
-          <div
-            style={{
-              margin: "70px auto 0",
-              width: "fit-content",
-              borderLeft: `4px solid ${isFailure ? "#fb7185" : "#5eead4"}`,
-              background: "rgba(15,23,42,.7)",
-              color: "#cbd5e1",
-              padding: "20px 28px",
-              fontSize: 24,
-            }}
-          >
-            Request sayısı değil, <strong>business operation</strong>{" "}
-            tekilleştirilir.
+            <span style={{ color: muted, fontSize: 23 }}>
+              No shared operation identity. Both requests execute.
+            </span>
+            <strong style={{ color: red, fontSize: 30 }}>
+              INVARIANT BROKEN
+            </strong>
           </div>
         </div>
       </Scene>
 
       <Scene end={345} frame={frame} start={205}>
         <div>
-          <div
+          <Label color={green}>OWNERSHIP</Label>
+          <h2
             style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
+              margin: "22px 0 55px",
+              fontSize: 68,
+              fontWeight: 600,
+              letterSpacing: -4,
             }}
           >
-            <div>
-              <div
-                style={{
-                  ...mono,
-                  color: "#5eead4",
-                  fontSize: 17,
-                  fontWeight: 750,
-                  letterSpacing: 3,
-                }}
-              >
-                ÇÖZÜM · {modeLabels[props.mode]}
-              </div>
-              <h2
-                style={{
-                  margin: "20px 0 0",
-                  fontSize: 66,
-                  lineHeight: 1,
-                  letterSpacing: -3.5,
-                }}
-              >
-                Bir owner.
-                <span style={{ color: "#5eead4" }}> Bir side effect.</span>
-              </h2>
-            </div>
-            <div
-              style={{
-                ...mono,
-                color: "#64748b",
-                fontSize: 15,
-                letterSpacing: 2,
-              }}
-            >
-              IDEMPOTENCY KEY: PAY-1042
-            </div>
-          </div>
+            One operation. One execution owner.
+          </h2>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1.15fr 1fr",
-              gap: 28,
-              marginTop: 72,
+              gridTemplateColumns: "1fr 70px 1.25fr 70px 1fr",
+              alignItems: "stretch",
             }}
           >
-            <div
-              style={{
-                border: "1px solid #2563eb",
-                borderRadius: 28,
-                background: "rgba(37,99,235,.08)",
-                padding: 30,
-              }}
-            >
-              <div style={{ ...mono, color: "#60a5fa", fontSize: 15 }}>
-                REQUEST A · OWNER
-              </div>
-              <div style={{ marginTop: 22, fontSize: 30, fontWeight: 800 }}>
-                Key'i claim eder
-              </div>
-              <div
-                style={{
-                  marginTop: 26,
-                  borderRadius: 16,
-                  background: "#2563eb",
-                  padding: 18,
-                  fontSize: 20,
-                  fontWeight: 750,
-                  textAlign: "center",
-                }}
-              >
-                Provider çağrısı
-              </div>
+            <div style={{ borderTop: `3px solid ${blue}`, paddingTop: 24 }}>
+              <Label>CALLERS</Label>
+              <p style={{ margin: "22px 0 0", fontSize: 30, lineHeight: 1.5 }}>
+                Request A
+                <br />
+                Request B
+              </p>
+              <code style={{ ...mono, color: muted, fontSize: 17 }}>
+                same key + payload
+              </code>
             </div>
-
             <div
               style={{
                 display: "grid",
                 placeItems: "center",
-                border: "1px solid #334155",
-                borderRadius: 28,
-                background: "rgba(15,23,42,.72)",
-                padding: 30,
-                textAlign: "center",
+                color: muted,
+                fontSize: 34,
               }}
             >
-              <div>
-                <div
-                  style={{
-                    ...mono,
-                    color: "#fbbf24",
-                    fontSize: 15,
-                    letterSpacing: 2,
-                  }}
-                >
-                  POSTGRESQL
-                </div>
-                <div
-                  style={{
-                    marginTop: 22,
-                    color: "#f8fafc",
-                    fontSize: 34,
-                    fontWeight: 800,
-                  }}
-                >
-                  processing → completed
-                </div>
-                <div
-                  style={{
-                    marginTop: 18,
-                    color: "#94a3b8",
-                    fontSize: 21,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Request hash ve başarılı response saklanır.
-                </div>
-              </div>
+              →
             </div>
-
-            <div
-              style={{
-                border: "1px solid #5eead4",
-                borderRadius: 28,
-                background: "rgba(20,184,166,.08)",
-                padding: 30,
-              }}
-            >
-              <div style={{ ...mono, color: "#5eead4", fontSize: 15 }}>
-                REQUEST B · DUPLICATE
-              </div>
-              <div style={{ marginTop: 22, fontSize: 30, fontWeight: 800 }}>
-                Sonucu bekler
-              </div>
-              <div
+            <div style={{ borderTop: `3px solid ${ink}`, paddingTop: 24 }}>
+              <Label color={ink}>DURABLE KEY RECORD</Label>
+              <p
                 style={{
-                  marginTop: 26,
-                  borderRadius: 16,
-                  background: "rgba(94,234,212,.12)",
-                  color: "#99f6e4",
-                  padding: 18,
-                  fontSize: 20,
-                  fontWeight: 750,
-                  textAlign: "center",
+                  margin: "22px 0 0",
+                  fontSize: 29,
+                  fontWeight: 700,
+                  lineHeight: 1.4,
                 }}
               >
-                Stored response replay
-              </div>
+                processing → completed
+              </p>
+              <p style={{ margin: "15px 0 0", color: muted, fontSize: 20 }}>
+                request hash + stored response
+              </p>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                placeItems: "center",
+                color: muted,
+                fontSize: 34,
+              }}
+            >
+              →
+            </div>
+            <div style={{ borderTop: `3px solid ${green}`, paddingTop: 24 }}>
+              <Label color={green}>OUTCOME</Label>
+              <p
+                style={{
+                  margin: "22px 0 0",
+                  color: green,
+                  fontSize: 30,
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                }}
+              >
+                1 provider call
+                <br />
+                1 stored replay
+              </p>
             </div>
           </div>
 
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 24,
-              marginTop: 48,
+              marginTop: 58,
+              borderTop: `1px solid ${rule}`,
+              paddingTop: 25,
+              color: muted,
+              fontSize: 23,
             }}
           >
-            <strong style={{ color: "#5eead4", fontSize: 62 }}>
-              {props.summary.providerCharges}
-            </strong>
-            <span style={{ color: "#94a3b8", fontSize: 26 }}>
-              charge · {props.summary.replayedResponses} replay
-            </span>
+            The idempotency key identifies the operation. The record selects its
+            owner and preserves its result.
           </div>
         </div>
       </Scene>
 
-      <Scene end={450} fadeOut={false} frame={frame} start={330}>
+      <Scene end={450} frame={frame} keepVisible start={330}>
         <div
           style={{
             display: "grid",
@@ -639,48 +399,35 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
           }}
         >
           <div>
-            <div
-              style={{
-                display: "inline-flex",
-                border: "1px solid #5eead4",
-                borderRadius: 999,
-                background: "rgba(20,184,166,.08)",
-                color: "#99f6e4",
-                padding: "13px 22px",
-                ...mono,
-                fontSize: 16,
-                fontWeight: 750,
-                letterSpacing: 2,
-              }}
-            >
-              MÜLAKATTA BÖYLE TOPARLA
-            </div>
+            <Label>INTERVIEW ANSWER</Label>
             <h2
               style={{
                 maxWidth: 1450,
-                margin: "45px auto 0",
-                fontSize: 82,
-                lineHeight: 1.02,
+                margin: "38px auto 0",
+                fontSize: 88,
+                fontWeight: 600,
+                lineHeight: 1.03,
                 letterSpacing: -5,
               }}
             >
-              Aynı operation.
+              Same operation.
               <br />
-              <span style={{ color: "#60a5fa" }}>Tek side effect.</span>
+              <span style={{ color: blue }}>One side effect.</span>
               <br />
-              <span style={{ color: "#5eead4" }}>Aynı response.</span>
+              <span style={{ color: green }}>Same response.</span>
             </h2>
             <p
               style={{
-                maxWidth: 1270,
-                margin: "50px auto 0",
-                color: "#94a3b8",
-                fontSize: 28,
+                maxWidth: 1260,
+                margin: "45px auto 0",
+                color: muted,
+                fontSize: 26,
                 lineHeight: 1.55,
               }}
             >
-              “Exactly-once demem. At-least-once delivery altında durable
-              idempotency state ile effectively-once side effect üretirim.”
+              Durable idempotency state produces an effectively-once side effect
+              under at-least-once delivery. It is not a blanket exactly-once
+              guarantee.
             </p>
           </div>
         </div>
@@ -689,20 +436,21 @@ export function DuplicatePaymentVideo(props: LabRunResult) {
       <footer
         style={{
           position: "absolute",
-          right: 92,
-          bottom: 46,
-          left: 92,
+          right: 100,
+          bottom: 45,
+          left: 100,
           display: "flex",
-          alignItems: "center",
           justifyContent: "space-between",
-          color: "#475569",
+          borderTop: `1px solid ${rule}`,
+          paddingTop: 14,
+          color: muted,
           ...mono,
           fontSize: 13,
-          letterSpacing: 1.5,
+          letterSpacing: 1.3,
         }}
       >
         <span>backend-systems-visual-lab / 01</span>
-        <span>{modeLabels[props.mode]}</span>
+        <span>{props.summary.providerCharges} CHARGE / {props.summary.replayedResponses} REPLAY</span>
       </footer>
     </AbsoluteFill>
   );
